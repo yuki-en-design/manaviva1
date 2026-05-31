@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沖縄探究｜問いさがしアプリ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap');
+  :root {
+    --ocean: #0a6e8a; --ocean-light: #e0f4f8; --ocean-mid: #5bb3c9;
+    --sand: #f5f0e8; --text: #1a1a2e; --text-muted: #6b7280;
+    --border: #d9e8ec; --success: #0f7a5a;
+    --coral: #e05a3a; --coral-light: #fdf0ec;
+    --radius: 10px; --radius-lg: 16px;
+    --white: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--sand); color: var(--text); min-height: 100vh; }
+  header { background: var(--ocean); color: white; padding: 1.5rem 1.25rem 1.25rem; text-align: center; }
+  header h1 { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 900; font-size: 1.4rem; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+  header p { font-size: 0.8rem; opacity: 0.8; }
+  .step-indicator { display: flex; justify-content: center; background: white; border-bottom: 1px solid var(--border); }
+  .step { flex: 1; max-width: 200px; padding: 0.75rem 0.5rem; text-align: center; font-size: 0.72rem; color: var(--text-muted); border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .step.active { color: var(--ocean); border-bottom-color: var(--ocean); font-weight: 700; }
+  .step.done { color: var(--success); border-bottom-color: var(--success); }
+  .step-num { display: block; font-size: 1rem; font-weight: 700; margin-bottom: 2px; }
+  
+  /* レスポンシブなコンテナ設計（Step 1は広く、他は読みやすさ重視で中央寄せ） */
+  .screen { display: none; padding: 1rem 1rem 2rem; max-width: 680px; margin: 0 auto; }
+  .screen.active { display: block; }
+  #screen-1.active { max-width: 1000px; } /* キーワード選択画面だけ幅広レイアウトを許可 */
+
+  .hint { background: var(--ocean-light); border-left: 3px solid var(--ocean-mid); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.65rem 0.9rem; font-size: 0.8rem; color: var(--ocean); margin-bottom: 1rem; }
+  
+  /* 2カラムレイアウト（PCでサイドバー、スマホで上部インライン） */
+  .step1-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  /* 左サイドバー（スマホでは上部配置＆スクロール固定） */
+  .sidebar-panel {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    position: sticky;
+    top: 0; /* スマホやiFrame内での上部固定 */
+    z-index: 100;
+  }
+  
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+  }
+  .sidebar-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ocean);
+  }
+  .sidebar-counter {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .sidebar-counter strong {
+    color: var(--ocean);
+    font-size: 1.1rem;
+    margin-right: 2px;
+  }
+  
+  .sidebar-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 2px 0;
+  }
+  .sidebar-placeholder {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    padding: 0.5rem 0;
+    width: 100%;
+    text-align: center;
+    font-style: italic;
+  }
+  
+  /* 改良：かわいく統一された削除機能つきミニバッジ */
+  .mini-tag {
+    background: var(--ocean-light);
+    color: var(--ocean);
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .mini-tag:hover {
+    background: var(--coral-light);
+    color: var(--coral);
+    border-color: #fbdcd3;
+  }
+  .mini-tag .remove-icon {
+    font-size: 0.85rem;
+    font-weight: 700;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+  .mini-tag:hover .remove-icon {
+    opacity: 1;
+  }
+  
+  .main-content-area {
+    flex: 1;
+  }
+
+  .category-block { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 0.6rem; overflow: hidden; }
+  .cat-header { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; cursor: pointer; user-select: none; background: white; transition: background 0.15s; }
+  .cat-header:hover { background: #f8fbfc; }
+  .cat-header-left { display: flex; align-items: center; gap: 0.5rem; }
+  .cat-emoji { font-size: 1.1rem; }
+  .cat-name { font-weight: 700; font-size: 0.9rem; }
+  .cat-badge { background: var(--ocean); color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; display: none; }
+  .cat-badge.visible { display: inline-block; }
+  .cat-chevron { font-size: 0.75rem; color: var(--text-muted); transition: transform 0.2s; }
+  .cat-chevron.open { transform: rotate(180deg); }
+  .cat-tags { padding: 0 1rem 0.9rem; display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { padding: 5px 13px; border-radius: 999px; border: 1.5px solid var(--border); font-size: 0.78rem; cursor: pointer; background: white; color: var(--text); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; }
+  .tag:hover { border-color: var(--ocean-mid); background: var(--ocean-light); }
+  .tag.selected { background: var(--ocean); border-color: var(--ocean); color: white; font-weight: 500; }
+
+  .btn { display: block; width: 100%; padding: 0.9rem; border-radius: var(--radius); border: none; font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.15s; letter-spacing: 0.03em; }
+  .btn-primary { background: var(--ocean); color: white; }
+  .btn-primary:hover { background: #085a72; }
+  .btn-primary:disabled { background: #b0cdd5; cursor: not-allowed; }
+  .btn-secondary { background: white; color: var(--ocean); border: 1.5px solid var(--ocean); }
+  .btn-secondary:hover { background: var(--ocean-light); }
+  .btn-area { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .results-intro { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; }
+  .question-card { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.1rem; margin-bottom: 0.65rem; cursor: pointer; transition: all 0.15s; }
+  .question-card:hover { border-color: var(--ocean-mid); box-shadow: 0 2px 8px rgba(10,110,138,0.1); }
+  .question-card.selected-q { border-color: var(--ocean); background: var(--ocean-light); box-shadow: 0 2px 12px rgba(10,110,138,0.15); }
+  .q-rank { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 0.75rem; font-weight: 700; margin-right: 0.5rem; flex-shrink: 0; }
+  .rank-1 { background: #ffd700; color: #7a5900; }
+  .rank-2 { background: #c0c0c0; color: #444; }
+  .rank-3 { background: #cd7f32; color: #fff; }
+  .rank-n { background: var(--ocean-light); color: var(--ocean); }
+  .q-header { display: flex; align-items: center; margin-bottom: 0.5rem; }
+  .q-label { font-size: 0.72rem; font-weight: 700; color: var(--ocean); background: var(--ocean-light); padding: 2px 8px; border-radius: 4px; margin-right: 0.4rem; }
+  .q-score { font-size: 0.7rem; color: var(--text-muted); margin-left: auto; }
+  .q-text { font-size: 0.82rem; line-height: 1.6; color: var(--text); }
+  .q-select-btn { margin-top: 0.6rem; padding: 5px 14px; border-radius: 999px; border: 1.5px solid var(--ocean); background: white; color: var(--ocean); font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; transition: all 0.15s; }
+  .q-select-btn:hover, .question-card.selected-q .q-select-btn { background: var(--ocean); color: white; }
+  .tie-note { background: #fff8e6; border: 1px solid #f0d070; border-radius: var(--radius); padding: 0.6rem 0.9rem; font-size: 0.78rem; color: #7a5900; margin-bottom: 0.75rem; }
+  .chosen-q-box { background: var(--ocean); color: white; border-radius: var(--radius-lg); padding: 1rem 1.1rem; margin-bottom: 1rem; }
+  .chosen-q-box .q-label-white { font-size: 0.72rem; font-weight: 700; opacity: 0.75; margin-bottom: 0.3rem; }
+  .chosen-q-box .q-text-white { font-size: 0.82rem; line-height: 1.6; }
+  .kw-count-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+  .kw-count-label { font-size: 0.8rem; color: var(--text-muted); }
+  .kw-count-num { font-size: 0.95rem; font-weight: 700; color: var(--ocean); }
+  .kw-tags-area { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; }
+  .kw-tag { padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--border); font-size: 0.8rem; cursor: pointer; background: white; color: var(--text); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; }
+  .kw-tag:hover { border-color: var(--ocean-mid); }
+  .kw-tag.kw-selected { background: var(--ocean); border-color: var(--ocean); color: white; font-weight: 500; }
+  .kw-tag.kw-disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; background: #f3f4f6; border-color: #e5e7eb; color: #9ca3af; }
+  .confirm-box { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 1rem; }
+  .confirm-row { padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border); }
+  .confirm-row:last-child { border-bottom: none; }
+  .confirm-label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 500; }
+  .confirm-value { font-size: 0.88rem; line-height: 1.55; }
+  .confirm-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 0.4rem; }
+  .confirm-tag { background: var(--ocean-light); color: var(--ocean); font-size: 0.75rem; padding: 3px 10px; border-radius: 999px; font-weight: 500; }
+  .screenshot-note { background: #fff8e6; border: 1px dashed #e0b030; border-radius: var(--radius); padding: 0.8rem 1rem; font-size: 0.8rem; color: #7a5000; margin-bottom: 1rem; line-height: 1.6; }
+  .screenshot-note strong { display: block; margin-bottom: 0.2rem; font-size: 0.85rem; }
+
+  /* PCやタブレットなど、一定の横幅がある環境向けに2カラム用のグリッドを設定 */
+  @media (min-width: 768px) {
+    .step1-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .sidebar-panel {
+      position: sticky;
+      top: 1.5rem; /* PCではスクロールに快適に追従 */
+      max-height: calc(100vh - 3rem);
+    }
+    .sidebar-tags {
+      max-height: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header id="app-header">
+  <h1>🌊 沖縄探究｜問いさがしアプリ</h1>
+  <p>気になるキーワードから、あなたにぴったりの問いを見つけよう</p>
+</header>
+
+<div class="step-indicator">
+  <div class="step active" id="step-tab-1"><span class="step-num">1</span>キーワード選択</div>
+  <div class="step" id="step-tab-2"><span class="step-num">2</span>問いを決める</div>
+  <div class="step" id="step-tab-3"><span class="step-num">3</span>深堀りKW選択</div>
+  <div class="step" id="step-tab-4"><span class="step-num">4</span>確認・メモ</div>
+</div>
+
+<div class="screen active" id="screen-1">
+  <div class="hint">気になるキーワードをいくつでも選んでOK！多く選ぶほど精度が上がるよ。</div>
+  
+  <div class="step1-layout">
+    <!-- 左側サイドバー：選択中キーワードと決定アクションの統合パネル -->
+    <div class="sidebar-panel" id="sidebar-panel">
+      <div class="sidebar-header">
+        <span class="sidebar-title">現在の選択状況</span>
+        <span class="sidebar-counter"><strong id="sidebar-count">0</strong>個選択中</span>
+      </div>
+      <div class="sidebar-tags" id="sidebar-tags-list">
+        <div class="sidebar-placeholder" id="sidebar-placeholder">キーワードをタップして選ぼう</div>
+      </div>
+      <div class="sidebar-btn-area">
+        <button class="btn btn-primary" id="to-step2-btn" onclick="goToStep2()" disabled>おすすめの問いを見る →</button>
+      </div>
+    </div>
+    
+    <!-- 右側：カテゴリ＆キーワード一覧 -->
+    <div class="main-content-area">
+      <div id="cat-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-2">
+  <p class="results-intro">選んだキーワードから算出したおすすめの問いです。気になる問いを1つ選んでください。</p>
+  <div id="tie-note-area"></div>
+  <div id="results-list"></div>
+  <div class="btn-area">
+    <button class="btn btn-primary" id="to-step3-btn" onclick="goToStep3()" disabled>この問いで進む →</button>
+    <button class="btn btn-secondary" onclick="goBack(1)">← キーワードを選び直す</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-3">
+  <div class="chosen-q-box" id="chosen-q-display"></div>
+  <div class="hint">この問いに関係するキーワードを <strong>3〜5個</strong> 選んでください。フォームに転記します。</div>
+  <div class="kw-count-bar">
+    <span class="kw-count-label">選択中</span>
+    <span class="kw-count-num" id="kw-count-num">0 / 5</span>
+  </div>
+  <div class="kw-tags-area" id="kw-tags-area"></div>
+  <div class="btn-area">
+    <button class="btn btn-primary" id="to-step4-btn" onclick="goToStep4()" disabled>確認画面へ →</button>
+    <button class="btn btn-secondary" onclick="goBack(2)">← 問いを選び直す</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-4">
+  <div class="screenshot-note">
+    <strong>📸 この画面をスクリーンショットして、フォームに転記してください</strong>
+    下の内容をGoogleフォームに入力したら完了です！
+  </div>
+  <div class="confirm-box" id="confirm-box"></div>
+  <div class="btn-area">
+    <button class="btn btn-secondary" onclick="goBack(3)">← キーワードを変更する</button>
+    <button class="btn btn-secondary" onclick="goBack(1)">最初からやり直す</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = {
+  Q1:  "沖縄の島々で再生可能エネルギーがなかなか広がらないのはなぜか。広めるには、何から手をつければいいだろう？",
+  Q2:  "沖縄の豊かな自然は、なぜ少しずつ失われているのか。次の世代に残すには、何から手をつければいいだろう？",
+  Q3:  "首里城の再建に、若い世代はどう関わっていけばいいのか。次の世代に受け継ぐには、何が必要だろう？",
+  Q4:  "沖縄の伝統文化が若い世代になかなか伝わらないのはなぜか。伝えていくには、どんな方法があるだろう？",
+  Q5:  "沖縄の子どもの貧困率が高いままなのはなぜか。変えていくには、どこから手をつければいいだろう？",
+  Q6:  "離島で安心して医療を受けられる環境がなかなか整わないのはなぜか。整えるには、何が必要だろう？",
+  Q7:  "沖縄に全国の米軍専用施設の約7割が集中しているのはなぜか。その背景を知り、自分の言葉で語れるようになるには、何が必要だろう？",
+  Q8:  "観光客が増えているのに、なぜ暮らしへの恩恵が実感しにくいのか。地域のみんなにとってよい観光にするには、何が必要だろう？",
+  Q9:  "沖縄で働く人の賃金が全国と比べて低いのはなぜか。変えていくには、何ができるだろう？",
+  Q10: "沖縄ならではのビジネスで長続きしているものとそうでないものは何が違うのか。成功させるには、何が必要だろう？",
+  Q11: "沖縄戦の記憶が次の世代に伝わりにくくなっているのはなぜか。伝えていくには、どんな方法があるだろう？",
+  Q12: "沖縄にルーツの違う人たちが暮らしているのに、お互いをよく知らない状況があるのはなぜか。つながりをつくるには、何ができるだろう？",
+  Q13: "沖縄の子どもたちの学力や進学率が全国と比べて差があるのはなぜか. 縮めるには、何必要だろう？",
+  Q14: "沖縄で育った若者が島を出ていきやすいのはなぜか。残りたいと思える場所にするには、何ができるだろう？"
+};
+
+// [Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8,Q9,Q10,Q11,Q12,Q13,Q14]
+// スコア設計3原則:
+// 2点=その問いの主役キーワード（各問いにつき3〜4個程度に限定）
+// 1点=本当に関連が深い背景のみ（迷ったら0点）
+// 0点=ノイズになる連想は切る
+
+const CATEGORIES = [
+  { emoji:"🌊", name:"自然・環境", tags:[
+    "サンゴの白化","海岸のプラスチックごみ","赤土流出","外来種",
+    "リゾート開発","海水温上昇","気候変動","やんばるの森","ロードキル",
+    "絶滅危惧種","基地と自然環境","台風対策"
+  ]},
+  { emoji:"⚡", name:"エネルギー・テクノロジー", tags:[
+    "太陽光発電","風力発電","海流発電","地熱発電","離島の電力供給",
+    "脱炭素","エコ","スタートアップ","起業","AI活用",
+    "テクノロジー活用","ドローン","ロボット","VR","3Dデータ",
+    "デジタル活用","SNS","インターネット","スマホ診察","遠隔医療"
+  ]},
+  { emoji:"🏯", name:"文化・歴史", tags:[
+    "首里城","首里城再建","琉球王国","沖縄の歴史","世界遺産","エイサー",
+    "琉球舞踊","三線","しまくとぅば","焼き物","染め物",
+    "工芸","後継者不足","跡継ぎ不足","沖縄戦","ひめゆり",
+    "慰霊の日","平和学習","おじぃ・おばぁの記憶","職人の技","伝統技術"
+  ]},
+  { emoji:"🪖", name:"基地・政治", tags:[
+    "米軍基地の集中","辺野古","移設問題","飛行機の騒音","事故",
+    "基地の仕事","軍用地","跡地利用","沖縄の地理","安全保障","本土との温度差"
+  ]},
+  { emoji:"💰", name:"経済・仕事", tags:[
+    "観光客","オーバーツーリズム","宿泊税","観光税","外資系ホテル",
+    "地元への還元","道路の渋滞","交通","最低賃金","給料の低さ",
+    "非正規雇用","アルバイト","観光頼みの経済","企業誘致","IT産業",
+    "ブランド化","特産品","農業","漁業","原材料","流通","ネット通販"
+  ]},
+  { emoji:"👨‍👩‍👧", name:"社会・生活", tags:[
+    "ひとり親家庭","こども食堂","フードバンク","生活保護","行政支援",
+    "貧困の連鎖","生活費の高騰","物価","離島","過疎化",
+    "医師不足","看護師不足","ドクターヘリ","医療輸送","アメラジアン",
+    "外国人","移民","言葉の壁","国際交流","多文化共生","ウチナーンチュの心"
+  ]},
+  { emoji:"🏫", name:"教育・若者", tags:[
+    "学力","勉強環境","塾","進学費用","奨学金",
+    "大学進学","ヤングケアラー","先生不足","特別支援","放課後の居場所",
+    "将来の夢","キャリア","就職","求人","県外就職",
+    "若者のUターン","若者の定着","沖縄への愛着","沖縄への誇り","沖縄での起業",
+    "魅力発信","県外との格差","県外への憧れ"
+  ]},
+  { emoji:"🏃", name:"スポーツ・健康", tags:[
+    "プロスポーツ","キングス","スポーツ合宿","キャンプ誘致","長寿崩壊",
+    "生活習慣病","食文化の変化","ファストフード","運動習慣","車社会"
+  ]}
+];
+
+const SCORES = {};
+function s(keywords, arr) { keywords.forEach(k => { SCORES[k] = arr.slice(); }); }
+
+// 自然・環境
+s(["サンゴの白化"],             [0,2,0,0,0,0,0,0,0,0,0,0,0,0]);
+s(["海岸のプラスチックごみ"],   [0,2,0,0,0,0,0,1,0,0,0,0,0,0]);
+s(["赤土流出"],                 [0,2,0,0,0,0,0,1,0,0,0,0,0,0]);
+s(["外来種"],                   [0,2,0,0,0,0,0,0,0,0,0,0,0,0]);
+s(["リゾート開発"],             [0,2,0,0,0,0,1,1,0,1,0,0,0,0]);
+s(["海水温上昇","気候変動"],    [1,2,0,0,0,0,0,0,0,0,0,0,0,0]);
+s(["やんばるの森"],             [0,2,0,1,0,0,0,0,0,0,0,0,0,0]);
+s(["ロードキル"],               [0,2,0,0,0,0,0,0,0,0,0,0,0,0]);
+s(["絶滅危惧種"],               [0,2,0,0,0,0,0,0,0,0,0,0,0,0]);
+s(["基地と自然環境"],           [0,2,0,0,0,0,2,0,0,0,0,0,0,0]);
+s(["台風対策"],                 [2,1,0,0,0,1,0,0,0,0,0,0,0,0]);
+
+// エネルギー・テクノロジー
+s(["太陽光発電","風力発電"],    [2,1,0,0,0,0,0,0,0,0,0,0,0,0]);
+s(["海流発電","地熱発電"],      [2,0,0,0,0,0,0,0,0,0,0,0,0,0]);
+s(["離島の電力供給"],           [2,0,0,0,0,1,0,0,0,0,0,0,0,1]);
+s(["脱炭素"],                   [2,1,0,0,0,0,0,0,0,0,0,0,0,0]);
+s(["エコ"],                     [1,1,0,0,0,0,0,0,0,0,0,0,0,0]);
+s(["スタートアップ","起業"],    [0,0,0,0,0,0,0,0,1,2,0,0,0,2]);
+s(["AI活用","テクノロジー活用"],[1,0,1,0,0,1,0,0,0,1,0,0,1,1]);
+s(["ドローン"],                 [0,0,0,0,0,2,0,0,0,1,0,0,0,0]);
+s(["ロボット"],                 [0,0,0,0,0,1,0,0,0,1,0,0,0,0]);
+s(["VR"],                       [0,0,1,1,0,0,0,0,0,0,2,0,0,0]);
+s(["3Dデータ"],                 [0,0,2,1,0,0,0,0,0,0,1,0,0,0]);
+s(["デジタル活用","SNS","インターネット"],[0,0,0,1,0,0,0,0,0,1,1,0,1,1]);
+s(["スマホ診察","遠隔医療"],    [0,0,0,0,0,2,0,0,0,0,0,0,0,0]);
+
+// 文化・歴史
+s(["首里城","首里城再建"],      [0,0,2,1,0,0,0,0,0,0,0,0,0,1]);
+s(["琉球王国","沖縄の歴史"],    [0,0,1,2,0,0,0,0,0,0,1,1,0,0]);
+s(["世界遺産"],                 [0,1,2,1,0,0,0,1,0,0,0,0,0,0]);
+s(["エイサー"],                 [0,0,0,2,0,0,0,0,0,0,0,1,0,1]);
+s(["琉球舞踊"],                 [0,0,0,2,0,0,0,0,0,0,0,0,0,0]);
+s(["三線"],                     [0,0,0,2,0,0,0,0,0,1,0,0,0,1]);
+s(["しまくとぅば"],             [0,0,0,2,0,0,0,0,0,0,0,1,1,1]);
+s(["焼き物","染め物","工芸"],   [0,0,0,2,0,0,0,0,0,2,0,0,0,0]);
+s(["後継者不足","跡継ぎ不足"],  [0,0,1,2,0,0,0,0,0,1,0,0,0,1]);
+s(["職人の技","伝統技術"],      [0,0,2,2,0,0,0,0,0,1,0,0,0,0]);
+s(["沖縄戦"],                   [0,0,0,0,0,0,1,0,0,0,2,0,0,0]);
+s(["ひめゆり"],                 [0,0,0,0,0,0,0,0,0,0,2,0,0,0]);
+s(["慰霊の日","平和学習"],      [0,0,0,0,0,0,1,0,0,0,2,0,0,0]);
+s(["おじぃ・おばぁの記憶"],     [0,0,0,1,0,0,0,0,0,0,2,0,0,0]);
+
+// 基地・政治
+s(["米軍基地の集中"],           [0,0,0,0,0,0,2,0,0,0,1,0,0,0]);
+s(["辺野古"],                   [0,1,0,0,0,0,2,0,0,0,1,0,0,0]);
+s(["移設問題"],                 [0,1,0,0,0,0,2,0,0,0,0,0,0,0]);
+s(["飛行機の騒音","事故"],      [0,0,0,0,0,0,2,0,0,0,0,0,0,0]);
+s(["基地の仕事","軍用地"],      [0,0,0,0,0,0,2,0,1,1,0,0,0,0]);
+s(["跡地利用"],                 [0,0,1,0,0,0,2,0,1,1,0,0,0,0]);
+s(["沖縄の地理"],               [1,0,0,0,0,1,2,1,0,0,0,1,0,1]);
+s(["安全保障"],                 [0,0,0,0,0,0,2,0,0,0,0,0,0,0]);
+s(["本土との温度差"],           [0,0,0,0,0,0,2,0,0,0,1,1,0,1]);
+
+// 経済・仕事
+s(["観光客","オーバーツーリズム"],[0,1,0,0,0,0,0,2,0,1,0,0,0,0]);
+s(["宿泊税","観光税"],          [0,0,0,0,0,0,0,2,0,0,0,0,0,0]);
+s(["外資系ホテル","地元への還元"],[0,0,0,0,0,0,0,2,1,1,0,0,0,0]);
+s(["道路の渋滞","交通"],        [0,0,0,0,0,0,0,2,0,0,0,0,0,1]);
+s(["最低賃金","給料の低さ"],    [0,0,0,0,1,0,0,0,2,1,0,0,0,1]);
+s(["非正規雇用","アルバイト"],  [0,0,0,0,1,0,0,0,2,1,0,0,0,1]);
+s(["観光頼みの経済"],           [0,0,0,0,0,0,0,2,2,1,0,0,0,1]);
+s(["企業誘致","IT産業"],        [0,0,0,0,0,0,0,0,1,2,0,0,0,1]);
+s(["ブランド化","特産品"],      [0,0,0,1,0,0,0,1,0,2,0,0,0,0]);
+s(["農業","漁業"],              [0,1,0,0,0,0,0,0,0,2,0,0,0,1]);
+s(["原材料","流通","ネット通販"],[0,0,0,0,0,0,0,0,0,2,0,0,0,0]);
+
+// 社会・生活
+s(["ひとり親家庭"],             [0,0,0,0,2,0,0,0,1,0,0,0,1,0]);
+s(["こども食堂","フードバンク"],[0,0,0,0,2,0,0,0,0,0,0,0,0,0]);
+s(["生活保護","行政支援"],      [0,0,0,0,2,1,0,0,0,0,0,0,0,0]);
+s(["貧困の連鎖"],               [0,0,0,0,2,0,0,0,1,0,0,0,2,0]);
+s(["生活費の高騰","物価"],      [0,0,0,0,1,0,0,0,1,0,0,0,0,1]);
+s(["離島","過疎化"],            [1,1,0,0,1,2,0,0,0,0,0,0,0,2]);
+s(["医師不足","看護師不足"],    [0,0,0,0,0,2,0,0,0,0,0,0,0,1]);
+s(["ドクターヘリ","医療輸送"],  [0,0,0,0,0,2,0,0,0,0,0,0,0,0]);
+s(["アメラジアン","外国人","移民"],[0,0,0,0,0,0,0,0,0,0,0,2,0,0]);
+s(["言葉の壁","国際交流","多文化共生"],[0,0,0,0,0,0,0,0,0,0,0,2,1,0]);
+s(["ウチナーンチュの心"],       [0,0,1,2,0,0,0,0,0,0,1,1,0,1]);
+
+// 教育・若者
+s(["学力","勉強環境","塾"],     [0,0,0,0,1,0,0,0,0,0,0,0,2,0]);
+s(["進学費用","奨学金"],        [0,0,0,0,1,0,0,0,0,0,0,0,2,1]);
+s(["大学進学"],                 [0,0,0,0,0,0,0,0,0,0,0,0,2,1]);
+s(["ヤングケアラー"],           [0,0,0,0,2,0,0,0,0,0,0,0,1,0]);
+s(["先生不足","特別支援"],      [0,0,0,0,0,0,0,0,0,0,0,0,2,0]);
+s(["放課後の居場所"],           [0,0,0,0,2,0,0,0,0,0,0,0,1,0]);
+s(["将来の夢","キャリア"],      [0,0,0,0,0,0,0,0,1,0,0,0,1,2]);
+s(["就職","求人","県外就職"],   [0,0,0,0,0,0,0,0,2,0,0,0,0,2]);
+s(["若者のUターン","若者の定着"],[0,0,0,1,0,0,0,0,1,0,0,0,0,2]);
+s(["沖縄への愛着","沖縄への誇り"],[0,0,1,2,0,0,0,0,0,0,1,1,0,2]);
+s(["沖縄での起業"],             [1,0,0,0,0,0,0,0,1,2,0,0,0,2]);
+s(["魅力発信"],                 [0,0,1,1,0,0,0,1,0,1,0,0,0,1]);
+s(["県外との格差","県外への憧れ"],[0,0,0,0,0,0,0,0,2,0,0,0,1,2]);
+
+// スポーツ・健康
+s(["プロスポーツ","キングス"],        [0,0,0,0,0,0,0,1,0,2,0,1,0,1]);
+s(["スポーツ合宿","キャンプ誘致"],    [0,0,0,0,0,0,0,2,0,1,0,0,0,0]);
+s(["長寿崩壊","生活習慣病"],          [0,0,0,1,1,2,0,0,0,0,0,0,0,0]);
+s(["食文化の変化","ファストフード"],  [0,0,0,2,1,1,1,0,0,0,0,1,0,0]);
+s(["運動習慣","車社会"],              [0,0,0,0,0,1,0,1,0,0,0,0,0,1]);
+
+const Q_KEYS = ["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12","Q13","Q14"];
+
+const state = {
+  selectedKws: new Set(),
+  chosenQKey: null,
+  selectedFinalKws: new Set(),
+  openCats: {}
+};
+
+let currentRelKws = [];
+
+window.onload = function() { renderStep1(); };
+
+function renderStep1() {
+  const container = document.getElementById("cat-list");
+  container.innerHTML = "";
+  CATEGORIES.forEach((cat, idx) => {
+    if (state.openCats[idx] === undefined) state.openCats[idx] = true;
+    const block = document.createElement("div");
+    block.className = "category-block";
+    const header = document.createElement("div");
+    header.className = "cat-header";
+    header.onclick = () => toggleCategory(idx);
+    const left = document.createElement("div");
+    left.className = "cat-header-left";
+    const emoji = document.createElement("span");
+    emoji.className = "cat-emoji"; emoji.textContent = cat.emoji;
+    const name = document.createElement("span");
+    name.className = "cat-name"; name.textContent = cat.name;
+    const badge = document.createElement("span");
+    badge.className = "cat-badge"; badge.id = `cat-badge-${idx}`;
+    left.appendChild(emoji); left.appendChild(name); left.appendChild(badge);
+    const chevron = document.createElement("span");
+    chevron.className = `cat-chevron ${state.openCats[idx] ? "open" : ""}`;
+    chevron.id = `cat-chev-${idx}`; chevron.textContent = "▼";
+    header.appendChild(left); header.appendChild(chevron);
+    block.appendChild(header);
+    const tagsContainer = document.createElement("div");
+    tagsContainer.className = "cat-tags";
+    tagsContainer.id = `cat-tags-${idx}`;
+    tagsContainer.style.display = state.openCats[idx] ? "flex" : "none";
+    cat.tags.forEach(tagText => {
+      const tagBtn = document.createElement("button");
+      tagBtn.className = `tag ${state.selectedKws.has(tagText) ? "selected" : ""}`;
+      tagBtn.textContent = tagText;
+      tagBtn.onclick = () => toggleKw(tagText);
+      tagsContainer.appendChild(tagBtn);
+    });
+    block.appendChild(tagsContainer);
+    container.appendChild(block);
+    updateCategoryBadge(idx);
+  });
+  updateSelectedBar();
+}
+
+function toggleCategory(idx) {
+  state.openCats[idx] = !state.openCats[idx];
+  const chev = document.getElementById(`cat-chev-${idx}`);
+  const area = document.getElementById(`cat-tags-${idx}`);
+  if (state.openCats[idx]) { chev.classList.add("open"); area.style.display = "flex"; }
+  else { chev.classList.remove("open"); area.style.display = "none"; }
+}
+
+function toggleKw(kw) {
+  if (state.selectedKws.has(kw)) {
+    state.selectedKws.delete(kw);
+  } else {
+    state.selectedKws.add(kw);
+  }
+  
+  // キーワードの追加/削除など構成の変更があった場合、以前の古い問いの選択状態をクリアする（バグ防止）
+  state.chosenQKey = null;
+  state.selectedFinalKws = new Set();
+  
+  renderStep1();
+}
+
+function updateCategoryBadge(idx) {
+  const cat = CATEGORIES[idx];
+  const badge = document.getElementById(`cat-badge-${idx}`);
+  if (!badge) return;
+  let count = 0;
+  cat.tags.forEach(t => { if (state.selectedKws.has(t)) count++; });
+  if (count > 0) { badge.textContent = count; badge.classList.add("visible"); }
+  else { badge.classList.remove("visible"); }
+}
+
+function updateSelectedBar() {
+  const countNum = document.getElementById("sidebar-count");
+  const placeholder = document.getElementById("sidebar-placeholder");
+  const tagsList = document.getElementById("sidebar-tags-list");
+  const toStep2Btn = document.getElementById("to-step2-btn");
+  
+  const count = state.selectedKws.size;
+  countNum.textContent = count;
+  
+  // プレースホルダー以外の古いミニタグ要素を完全にクリア
+  const oldTags = tagsList.querySelectorAll(".mini-tag");
+  oldTags.forEach(t => t.remove());
+
+  if (count > 0) {
+    toStep2Btn.disabled = false;
+    if (placeholder) placeholder.style.display = "none";
+    
+    // かわいく統一された削除ボタン付きバッジ要素をサイドバーへ動的追加
+    Array.from(state.selectedKws).forEach(t => {
+      const minit = document.createElement("span");
+      minit.className = "mini-tag";
+      minit.innerHTML = `${t} <span class="remove-icon" title="削除">×</span>`;
+      
+      // サイドバーのミニタグ自体をタップしてサッと削除できるようにする親切設計
+      minit.onclick = (e) => {
+        e.stopPropagation();
+        toggleKw(t);
+      };
+      
+      tagsList.appendChild(minit);
+    });
+  } else {
+    toStep2Btn.disabled = true;
+    if (placeholder) placeholder.style.display = "block";
+  }
+}
+
+function changeScreen(activeNum) {
+  const appHeader = document.getElementById("app-header");
+  if (appHeader) {
+    appHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  for (let i = 1; i <= 4; i++) {
+    const scr = document.getElementById(`screen-${i}`);
+    const tab = document.getElementById(`step-tab-${i}`);
+    if (i === activeNum) { scr.classList.add("active"); tab.className = "step active"; }
+    else { scr.classList.remove("active"); tab.className = i < activeNum ? "step done" : "step"; }
+  }
+}
+
+function goBack(num) {
+  if (num === 1) {
+    state.chosenQKey = null;
+    state.selectedFinalKws = new Set();
+  }
+  changeScreen(num);
+}
+
+function goToStep2() {
+  changeScreen(2);
+  const qScores = {};
+  Q_KEYS.forEach(qKey => { qScores[qKey] = 0; });
+  state.selectedKws.forEach(kw => {
+    const scList = SCORES[kw];
+    if (scList) Q_KEYS.forEach((qKey, i) => { qScores[qKey] += scList[i]; });
+  });
+
+  const sorted = Q_KEYS.map(qKey => ({ qKey, text: QUESTIONS[qKey], score: qScores[qKey] }))
+    .sort((a, b) => b.score - a.score);
+
+  // 0点フォールバック：アラート表示して戻る
+  if (sorted[0].score === 0) {
+    alert('キーワードが選ばれていないか、関連する問いが見つかりませんでした。\nもう少しキーワードを追加してみてください！');
+    changeScreen(1);
+    return;
+  }
+
+  const container = document.getElementById("results-list");
+  container.innerHTML = "";
+  const tieNoteArea = document.getElementById("tie-note-area");
+  tieNoteArea.innerHTML = "";
+
+  const maxScore = sorted[0].score;
+
+  // タイ順位算出・3位以内を抽出
+  let currentRank = 1, prevScore = null;
+  const rankedSorted = sorted.map((item, idx) => {
+    if (idx === 0) currentRank = 1;
+    else if (item.score < prevScore) currentRank = idx + 1;
+    prevScore = item.score;
+    return { ...item, rank: currentRank };
+  });
+
+  const displayItems = rankedSorted.filter(item => item.rank <= 3);
+
+  // 【差し戻しアラートの徹底スマート化】
+  // 最大スコアが極めて低い（1点のみ）か、候補が6件以上に散らばりすぎて絞り込めない場合
+  // 生徒に分かりやすい親切なアラートを出して自動でアコーディオン画面へ戻す
+  if (maxScore <= 1 || displayItems.length >= 6) {
+    alert('選んだキーワードが少なすぎるため、おすすめの問いを絞り込めませんでした。\nもう少し関連するキーワードをいくつか選んでみましょう！');
+    changeScreen(1);
+    return;
+  }
+
+  // もし前回の「選択中の問い（state.chosenQKey）」が再計算後の上位3つの表示候補に入っていない場合はリセットする
+  if (state.chosenQKey) {
+    const isValid = displayItems.some(item => item.qKey === state.chosenQKey);
+    if (!isValid) {
+      state.chosenQKey = null;
+    }
+  }
+
+  // 絞り込みが成功（候補が2〜5件）している場合の綺麗に整ったメッセージ表示
+  if (displayItems.length > 3) {
+    const tieNote = document.createElement("div");
+    tieNote.className = "tie-note";
+    tieNote.innerHTML = `💡 <strong>おすすめ候補が同じマッチ度で並んでいます（候補：${displayItems.length}つ）。</strong>関心がある問いを1つ選んでください。`;
+    tieNoteArea.appendChild(tieNote);
+  }
+
+  displayItems.forEach(item => {
+    const card = document.createElement("div");
+    card.className = `question-card${state.chosenQKey === item.qKey ? " selected-q" : ""}`;
+    card.onclick = () => selectQuestion(item.qKey);
+
+    const qHeader = document.createElement("div");
+    qHeader.className = "q-header";
+    const rankSpan = document.createElement("span");
+    rankSpan.className = `q-rank rank-${Math.min(item.rank, 3) === item.rank ? item.rank : 'n'}`;
+    rankSpan.textContent = item.rank === 1 ? "🥇" : item.rank === 2 ? "🥈" : item.rank === 3 ? "🥉" : item.rank;
+
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "q-label"; labelSpan.textContent = item.qKey;
+    const scoreSpan = document.createElement("span");
+    scoreSpan.className = "q-score"; scoreSpan.textContent = `マッチ度: ${item.score}点`;
+
+    qHeader.appendChild(rankSpan); qHeader.appendChild(labelSpan); qHeader.appendChild(scoreSpan);
+
+    const textDiv = document.createElement("div");
+    textDiv.className = "q-text"; textDiv.textContent = item.text;
+
+    const selectBtn = document.createElement("button");
+    selectBtn.className = "q-select-btn";
+    selectBtn.textContent = state.chosenQKey === item.qKey ? "✓ 選択中" : "この問いを選ぶ";
+
+    card.appendChild(qHeader); card.appendChild(textDiv); card.appendChild(selectBtn);
+    container.appendChild(card);
+  });
+
+  document.getElementById("to-step3-btn").disabled = !state.chosenQKey;
+}
+
+function selectQuestion(qKey) {
+  state.chosenQKey = qKey;
+  goToStep2();
+}
+
+function goToStep3() {
+  changeScreen(3);
+  const display = document.getElementById("chosen-q-display");
+  display.innerHTML = `
+    <div class="q-label-white">選択した問い (${state.chosenQKey})</div>
+    <div class="q-text-white">${QUESTIONS[state.chosenQKey]}</div>
+  `;
+
+  const qIndex = Q_KEYS.indexOf(state.chosenQKey);
+  const relKwsSet = new Set();
+
+  // Step1で選んだキーワードのうちこの問いに関連するものを優先
+  state.selectedKws.forEach(kw => {
+    if (SCORES[kw] && SCORES[kw][qIndex] > 0) relKwsSet.add(kw);
+  });
+  // スコアDB全体からもマージ
+  Object.keys(SCORES).forEach(kw => {
+    if (SCORES[kw][qIndex] > 0) relKwsSet.add(kw);
+  });
+
+  currentRelKws = Array.from(relKwsSet);
+
+  // 問いが変わった場合、関係ないキーワードはリセット
+  state.selectedFinalKws.forEach(kw => {
+    if (!relKwsSet.has(kw)) state.selectedFinalKws.delete(kw);
+  });
+
+  renderFinalKwTags();
+}
+
+function renderFinalKwTags() {
+  const container = document.getElementById("kw-tags-area");
+  container.innerHTML = "";
+  const isMaxReached = state.selectedFinalKws.size >= 5;
+
+  currentRelKws.forEach(kw => {
+    const btn = document.createElement("button");
+    btn.className = "kw-tag";
+    const isSelected = state.selectedFinalKws.has(kw);
+    if (isSelected) btn.classList.add("kw-selected");
+    if (isMaxReached && !isSelected) { btn.disabled = true; btn.classList.add("kw-disabled"); }
+    btn.textContent = kw;
+    btn.onclick = () => toggleFinalKw(kw);
+    container.appendChild(btn);
+  });
+
+  const size = state.selectedFinalKws.size;
+  document.getElementById("kw-count-num").textContent = `${size} / 5`;
+  document.getElementById("to-step4-btn").disabled = (size < 3 || size > 5);
+}
+
+function toggleFinalKw(kw) {
+  if (state.selectedFinalKws.has(kw)) state.selectedFinalKws.delete(kw);
+  else if (state.selectedFinalKws.size < 5) state.selectedFinalKws.add(kw);
+  renderFinalKwTags();
+}
+
+function goToStep4() {
+  changeScreen(4);
+  const container = document.getElementById("confirm-box");
+  container.innerHTML = "";
+
+  const rowQ = document.createElement("div");
+  rowQ.className = "confirm-row";
+  rowQ.innerHTML = `<div class="confirm-label">探究する問いの番号</div>
+    <div class="confirm-value" style="font-weight:700;color:var(--ocean);">${state.chosenQKey}</div>`;
+  container.appendChild(rowQ);
+
+  const rowQText = document.createElement("div");
+  rowQText.className = "confirm-row";
+  rowQText.innerHTML = `<div class="confirm-label">探究する問いの内容</div>
+    <div class="confirm-value">${QUESTIONS[state.chosenQKey]}</div>`;
+  container.appendChild(rowQText);
+
+  const rowTags = document.createElement("div");
+  rowTags.className = "confirm-row";
+  const tagLabel = document.createElement("div");
+  tagLabel.className = "confirm-label"; tagLabel.textContent = "深堀りキーワード（3〜5個）";
+  rowTags.appendChild(tagLabel);
+  const tagsWrapper = document.createElement("div");
+  tagsWrapper.className = "confirm-tags";
+  Array.from(state.selectedFinalKws).forEach(kw => {
+    const tSpan = document.createElement("span");
+    tSpan.className = "confirm-tag"; tSpan.textContent = kw;
+    tagsWrapper.appendChild(tSpan);
+  });
+  rowTags.appendChild(tagsWrapper);
+  container.appendChild(rowTags);
+}
+</script>
+</body>
+</html>
