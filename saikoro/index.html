@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎲 チーム発足！さいころトーク！！</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FFF8F0;
+  --red: #E84444;
+  --blue: #4477DD;
+  --yellow: #F5C842;
+  --green: #44BB77;
+  --dark: #2A2A2A;
+  --card: #FFFFFF;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--dark);
+  overflow-x: hidden;
+}
+header {
+  background: var(--green);
+  color: white;
+  text-align: center;
+  padding: 20px 16px 16px;
+  box-shadow: 0 4px 0 #2b8a53;
+  position: relative;
+  z-index: 10;
+}
+header h1 { font-size: 1.8rem; font-weight: 900; letter-spacing: 0.05em; }
+header p { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; font-weight: 700; }
+main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 30px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.dice-section { margin-bottom: 24px; perspective: 1000px; }
+.dice-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.dice-label {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: var(--dark);
+  letter-spacing: 0.05em;
+  background: #FFE8E8;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+.dice-outer {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  filter: drop-shadow(6px 6px 0 var(--dark));
+  transition: transform 0.1s;
+}
+.dice {
+  width: 100%;
+  height: 100%;
+  background: white;
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.dice::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: white;
+  clip-path: polygon(50% 5%, 95% 39%, 79% 95%, 21% 95%, 5% 39%);
+  z-index: 1;
+}
+.dice-number {
+  position: relative;
+  z-index: 2;
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--red);
+  margin-top: 10px;
+}
+.dice-outer.rolling { animation: rollAnimation 0.5s linear infinite; }
+@keyframes rollAnimation {
+  0% { transform: translateZ(-50px) rotateX(0deg) rotateY(0deg); filter: drop-shadow(6px 6px 0 var(--dark)); }
+  25% { transform: translateZ(0px) rotateX(20deg) rotateY(-20deg) scale(1.05); filter: drop-shadow(10px 10px 0 var(--dark)); }
+  50% { transform: translateZ(-50px) rotateX(0deg) rotateY(0deg); filter: drop-shadow(6px 6px 0 var(--dark)); }
+  75% { transform: translateZ(0px) rotateX(-20deg) rotateY(20deg) scale(1.05); filter: drop-shadow(10px 10px 0 var(--dark)); }
+  100% { transform: translateZ(-50px) rotateX(0deg) rotateY(0deg); filter: drop-shadow(6px 6px 0 var(--dark)); }
+}
+.dice-outer.rolling .dice-number { color: var(--blue); }
+.roll-btn {
+  display: block;
+  background: var(--yellow);
+  color: var(--dark);
+  border: 3px solid var(--dark);
+  box-shadow: 4px 4px 0 var(--dark);
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 900;
+  padding: 14px 50px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  letter-spacing: 0.08em;
+  margin-bottom: 28px;
+}
+.roll-btn:hover { transform: translateY(-2px); box-shadow: 6px 6px 0 var(--dark); }
+.roll-btn:active { transform: translateY(3px); box-shadow: 1px 1px 0 var(--dark); }
+.roll-btn:disabled { background: #ccc; cursor: not-allowed; box-shadow: 2px 2px 0 var(--dark); }
+.topic-card {
+  background: white;
+  border: 3px solid var(--dark);
+  box-shadow: 6px 6px 0 var(--dark);
+  border-radius: 20px;
+  padding: 28px 20px;
+  text-align: center;
+  width: 100%;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.topic-label {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: white;
+  background: var(--blue);
+  padding: 4px 16px;
+  border-radius: 999px;
+  letter-spacing: 0.1em;
+}
+.topic-text {
+  font-size: 1.4rem;
+  font-weight: 900;
+  line-height: 1.5;
+  color: var(--dark);
+  word-break: break-word;
+}
+.topic-card.empty .topic-text { color: #AAA; font-size: 1.1rem; font-weight: 700; }
+.dice-nums { font-size: 0.95rem; font-weight: 700; color: #888; margin-top: 4px; }
+.topic-sub { font-size: 0.8rem; font-weight: 700; color: #888; margin-top: 4px; }
+@media (max-width: 480px) {
+  header h1 { font-size: 1.5rem; }
+  .dice-outer { width: 110px; height: 110px; }
+  .dice-number { font-size: 3.2rem; margin-top: 8px; }
+  .topic-text { font-size: 1.2rem; }
+  .roll-btn { font-size: 1.1rem; padding: 12px 40px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎲 チーム発足！さいころトーク！！</h1>
+  <p>12面サイコロ（正十二面体）を振って、語り合おう！</p>
+</header>
+
+<main>
+  <div class="dice-section">
+    <div class="dice-wrap">
+      <div class="dice-label">正十二面体の「面」</div>
+      <div class="dice-outer" id="diceOuter">
+        <div class="dice">
+          <div style="position:absolute; inset:0; background:var(--dark); clip-path:polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);"></div>
+          <div class="dice-number" id="diceNumber">？</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="roll-btn" id="rollBtn" onclick="rollDice()">🎲 ふる！</button>
+
+  <div class="topic-card empty" id="topicCard">
+    <div class="topic-label">お　題</div>
+    <div class="topic-text" id="topicText">サイコロをふってね！</div>
+    <div class="dice-nums" id="diceNums"></div>
+  </div>
+</main>
+
+<script>
+const topics = [
+  { main: "最近ハマっていること・<br>気になっていることは？", sub: "（趣味・ゲーム・アニメ・食べ物・ニュースなど何でもOK）" },
+  { main: "チームで役に立てそうな、<br>自分の強みは？", sub: "（話すのが得意、調べるのが好き、まとめるのが得意 など）" },
+  { main: "ちょっと苦手なことは？", sub: "（早起き、人前で話すこと、虫、運動…何でもOK）" },
+  { main: "このチームの第一印象は？", sub: "（明るそう、優しそう、静かそう、楽しそう など）" },
+  { main: "中3は高1に、高1は中3に、<br>聞いてみたいことは？", sub: "（学校生活、部活、勉強、趣味など何でもOK）" },
+  { main: "この夏休みに<br>楽しみにしていることは？", sub: "（旅行、部活、遊び、探究、家でのんびり…など）" },
+  { main: "見た目では分からない、<br>自分の一面は？", sub: "（実は○○が好き、意外と○○です など）" },
+  { main: "これまでで<br>一番頑張ったことは？", sub: "（勉強、部活、習い事、趣味、ゲームでもOK）" },
+  { main: "「沖縄らしいな」と<br>思った出来事は？", sub: "（最近でも昔でもOK）" },
+  { main: "一緒に活動するとき、<br>こんな人だとうれしい！", sub: "（話しかけてくれる、協力してくれる、時間を守る など）" },
+  { main: "興南祭で<br>楽しみにしていることは？", sub: "（出し物、後夜祭、友達との時間など）" },
+  { main: "フリートーク！", sub: "（好きな話題でOK）" }
+];
+
+let rolling = false;
+
+function rollDice() {
+  if (rolling) return;
+  rolling = true;
+
+  const diceOuter = document.getElementById('diceOuter');
+  const diceNumber = document.getElementById('diceNumber');
+  const btn = document.getElementById('rollBtn');
+  const card = document.getElementById('topicCard');
+  const topicText = document.getElementById('topicText');
+  const diceNums = document.getElementById('diceNums');
+
+  btn.disabled = true;
+  diceOuter.classList.add('rolling');
+  card.classList.add('empty');
+  topicText.innerHTML = 'ガラガラガラ...';
+  diceNums.textContent = '';
+
+  let ticks = 0;
+  const interval = setInterval(() => {
+    diceNumber.textContent = Math.floor(Math.random() * 12) + 1;
+    ticks++;
+    if (ticks >= 18) {
+      clearInterval(interval);
+      finishRoll(diceOuter, diceNumber, btn, card, topicText, diceNums);
+    }
+  }, 60);
+}
+
+function finishRoll(diceOuter, diceNumber, btn, card, topicText, diceNums) {
+  const finalIndex = Math.floor(Math.random() * 12);
+  const finalNum = finalIndex + 1;
+
+  diceOuter.classList.remove('rolling');
+  diceNumber.textContent = finalNum;
+
+  card.classList.remove('empty');
+  const topic = topics[finalIndex];
+  topicText.innerHTML = topic.main + '<div class="topic-sub">' + topic.sub + '</div>';
+  diceNums.textContent = `出た目： ${finalNum}`;
+
+  btn.disabled = false;
+  rolling = false;
+}
+</script>
+</body>
+</html>
