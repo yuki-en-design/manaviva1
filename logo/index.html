@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎨 チームロゴメーカー</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FFF8F0;
+  --dark: #2A2A2A;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--dark);
+}
+header {
+  background: #4477DD;
+  color: white;
+  text-align: center;
+  padding: 20px 16px 16px;
+  box-shadow: 0 4px 0 #2d54a3;
+}
+header h1 { font-size: 1.6rem; font-weight: 900; letter-spacing: 0.03em; }
+header p { font-size: 0.85rem; opacity: 0.9; margin-top: 4px; font-weight: 700; }
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 900;
+  margin-bottom: 6px;
+  color: var(--dark);
+}
+input[type="text"] {
+  width: 100%;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  border: 3px solid var(--dark);
+  border-radius: 12px;
+  background: white;
+}
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+select {
+  width: 100%;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 10px;
+  border: 3px solid var(--dark);
+  border-radius: 12px;
+  background: white;
+}
+.swatch-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatch {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--dark);
+}
+.swatch.active { border-color: var(--dark); transform: scale(1.1); }
+.pen-swatch {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  cursor: pointer;
+}
+.pen-swatch.active { border-color: var(--dark); transform: scale(1.15); }
+.canvas-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+  position: relative;
+}
+.canvas-stack {
+  position: relative;
+  width: 300px; height: 300px;
+  border: 3px solid var(--dark);
+  border-radius: 16px;
+  box-shadow: 5px 5px 0 var(--dark);
+  background: white;
+  overflow: hidden;
+}
+canvas { position: absolute; top: 0; left: 0; }
+#drawCanvas { cursor: crosshair; touch-action: none; }
+.tool-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.tool-row span { font-size: 0.8rem; font-weight: 900; color: #555; }
+input[type="range"] { width: 90px; }
+.btn-row { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+button {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  border: 3px solid var(--dark);
+  border-radius: 999px;
+  background: #F5C842;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--dark);
+}
+button:active { transform: translateY(2px); box-shadow: 1px 1px 0 var(--dark); }
+button.secondary { background: white; }
+.hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: 700;
+  margin-top: 6px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎨 チームロゴメーカー</h1>
+  <p>形・モチーフ・色を選んで、描き足して完成させよう！</p>
+</header>
+
+<main>
+  <div class="field">
+    <label>チーム名</label>
+    <input type="text" id="teamName" placeholder="チーム名を入力してね" />
+  </div>
+
+  <div class="row2 field">
+    <div>
+      <label>形</label>
+      <select id="shapeSelect">
+        <option value="circle">丸</option>
+        <option value="hexagon">六角形</option>
+        <option value="shield">シールド</option>
+        <option value="square">四角</option>
+      </select>
+    </div>
+    <div>
+      <label>モチーフ</label>
+      <select id="motifSelect">
+        <option value="star">星</option>
+        <option value="leaf">葉っぱ</option>
+        <option value="wave">波</option>
+        <option value="sun">太陽</option>
+        <option value="moon">月</option>
+        <option value="bolt">雷</option>
+        <option value="flower">花</option>
+        <option value="heart">ハート</option>
+        <option value="arrow">矢印</option>
+        <option value="tree">木</option>
+        <option value="mountain">山</option>
+        <option value="fish">魚</option>
+        <option value="bird">鳥</option>
+        <option value="note">音符</option>
+        <option value="book">本</option>
+        <option value="crown">王冠</option>
+        <option value="flame">炎</option>
+        <option value="diamond">ダイヤ</option>
+        <option value="cross">十字</option>
+        <option value="circle2">丸（中心点）</option>
+        <option value="cloud">雲</option>
+        <option value="umbrella">傘</option>
+        <option value="key">鍵</option>
+        <option value="globe">地球</option>
+        <option value="feather">羽</option>
+        <option value="drop">水滴</option>
+        <option value="spiral">渦巻き</option>
+        <option value="anchor">いかり</option>
+        <option value="none">なし</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>モチーフの大きさ</label>
+    <input type="range" id="motifSize" min="50" max="150" value="100" style="width: 100%;" />
+  </div>
+
+  <div class="field">
+    <label>配色</label>
+    <div class="swatch-row" id="paletteRow"></div>
+  </div>
+
+  <div class="canvas-wrap">
+    <div class="canvas-stack">
+      <canvas id="baseCanvas" width="900" height="900" style="width:300px; height:300px;"></canvas>
+      <canvas id="drawCanvas" width="900" height="900" style="width:300px; height:300px;"></canvas>
+    </div>
+  </div>
+
+  <div class="tool-row">
+    <span>ペンの色</span>
+    <div class="swatch-row" id="penColorRow"></div>
+    <span>太さ</span>
+    <input type="range" id="penWidth" min="2" max="16" value="5" />
+  </div>
+
+  <div class="btn-row">
+    <button class="secondary" id="undoBtn">⏪ 戻す</button>
+    <button class="secondary" id="clearDrawBtn">🧹 描画を消す</button>
+  </div>
+
+  <div class="btn-row" style="margin-top: 10px;">
+    <button id="finishBtn" style="background:#44BB77; font-size: 1rem; padding: 12px 28px;">✅ 完成！</button>
+  </div>
+
+  <p class="hint">キャンバスに線や絵を描き込んで、自分たちらしいロゴに仕上げよう！</p>
+</main>
+
+<script>
+const palettes = [
+  { name: 'green', main: '#3B6D11', bg: '#EAF3DE' },
+  { name: 'blue', main: '#185FA5', bg: '#E6F1FB' },
+  { name: 'coral', main: '#993C1D', bg: '#FAECE7' },
+  { name: 'pink', main: '#993556', bg: '#FBEAF0' },
+  { name: 'amber', main: '#854F0B', bg: '#FAEEDA' },
+  { name: 'purple', main: '#534AB7', bg: '#EEEDFE' },
+  { name: 'red', main: '#A32D2D', bg: '#FCEBEB' },
+  { name: 'teal', main: '#0F6E56', bg: '#E1F5EE' },
+  { name: 'navy', main: '#1F3864', bg: '#E6ECF5' },
+  { name: 'yellow', main: '#B8860B', bg: '#FFF8E0' },
+  { name: 'lime', main: '#5A7D1A', bg: '#F0F5E0' },
+  { name: 'sky', main: '#2E86AB', bg: '#E3F2F8' },
+  { name: 'violet', main: '#6A3D9A', bg: '#F0E5F8' },
+  { name: 'brown', main: '#6B4423', bg: '#F2E8DC' },
+  { name: 'gray', main: '#444441', bg: '#F1EFE8' },
+  { name: 'black', main: '#1A1A1A', bg: '#F5F5F5' }
+];
+
+let selectedPaletteIdx = 0;
+let selectedPenColor = '#2C2C2A';
+
+const paletteRow = document.getElementById('paletteRow');
+palettes.forEach((p, i) => {
+  const sw = document.createElement('div');
+  sw.className = 'swatch' + (i === 0 ? ' active' : '');
+  sw.style.background = p.main;
+  sw.onclick = () => {
+    selectedPaletteIdx = i;
+    [...paletteRow.children].forEach((c, ci) => c.classList.toggle('active', ci === i));
+    drawBase();
+  };
+  paletteRow.appendChild(sw);
+});
+
+const penColors = ['#2C2C2A', '#FFFFFF', '#E84444', '#4477DD', '#F5C842', '#44BB77'];
+const penColorRow = document.getElementById('penColorRow');
+penColors.forEach((c, i) => {
+  const sw = document.createElement('div');
+  sw.className = 'pen-swatch' + (i === 0 ? ' active' : '');
+  sw.style.background = c;
+  sw.onclick = () => {
+    selectedPenColor = c;
+    [...penColorRow.children].forEach((cc, ci) => cc.classList.toggle('active', ci === i));
+  };
+  penColorRow.appendChild(sw);
+});
+
+const baseCanvas = document.getElementById('baseCanvas');
+const bctx = baseCanvas.getContext('2d');
+bctx.scale(3, 3);
+const shapeSelect = document.getElementById('shapeSelect');
+const motifSelect = document.getElementById('motifSelect');
+const teamNameInput = document.getElementById('teamName');
+
+function drawShape(shape, cx, cy, size, color) {
+  bctx.fillStyle = color;
+  bctx.beginPath();
+  if (shape === 'circle') {
+    bctx.arc(cx, cy, size, 0, Math.PI * 2);
+  } else if (shape === 'square') {
+    const r = 16;
+    const x = cx - size, y = cy - size, w = size * 2, h = size * 2;
+    bctx.moveTo(x + r, y);
+    bctx.arcTo(x + w, y, x + w, y + h, r);
+    bctx.arcTo(x + w, y + h, x, y + h, r);
+    bctx.arcTo(x, y + h, x, y, r);
+    bctx.arcTo(x, y, x + w, y, r);
+  } else if (shape === 'hexagon') {
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI / 3) * i - Math.PI / 2;
+      const px = cx + size * Math.cos(a);
+      const py = cy + size * Math.sin(a);
+      if (i === 0) bctx.moveTo(px, py); else bctx.lineTo(px, py);
+    }
+    bctx.closePath();
+  } else if (shape === 'shield') {
+    bctx.moveTo(cx - size, cy - size * 1.0);
+    bctx.lineTo(cx + size, cy - size * 1.0);
+    bctx.lineTo(cx + size, cy);
+    bctx.quadraticCurveTo(cx + size, cy + size * 0.9, cx, cy + size);
+    bctx.quadraticCurveTo(cx - size, cy + size * 0.9, cx - size, cy);
+    bctx.closePath();
+  }
+  bctx.fill();
+}
+
+function drawMotif(motif, cx, cy, size) {
+  bctx.fillStyle = '#FFFFFF';
+  bctx.strokeStyle = '#FFFFFF';
+  if (motif === 'star') {
+    bctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const r = i % 2 === 0 ? size * 0.45 : size * 0.2;
+      const a = (Math.PI / 5) * i - Math.PI / 2;
+      const px = cx + r * Math.cos(a);
+      const py = cy + r * Math.sin(a);
+      if (i === 0) bctx.moveTo(px, py); else bctx.lineTo(px, py);
+    }
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'leaf') {
+    bctx.beginPath();
+    bctx.moveTo(cx, cy + size * 0.4);
+    bctx.quadraticCurveTo(cx - size * 0.4, cy, cx, cy - size * 0.4);
+    bctx.quadraticCurveTo(cx + size * 0.4, cy, cx, cy + size * 0.4);
+    bctx.fill();
+    bctx.beginPath();
+    bctx.moveTo(cx, cy + size * 0.35);
+    bctx.lineTo(cx, cy - size * 0.35);
+    bctx.lineWidth = 2;
+    bctx.stroke();
+  } else if (motif === 'wave') {
+    bctx.beginPath();
+    bctx.moveTo(cx - size * 0.5, cy);
+    bctx.quadraticCurveTo(cx - size * 0.25, cy - size * 0.3, cx, cy);
+    bctx.quadraticCurveTo(cx + size * 0.25, cy + size * 0.3, cx + size * 0.5, cy);
+    bctx.lineWidth = 6;
+    bctx.lineCap = 'round';
+    bctx.stroke();
+  } else if (motif === 'sun') {
+    bctx.beginPath();
+    bctx.arc(cx, cy, size * 0.25, 0, Math.PI * 2);
+    bctx.fill();
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI / 4) * i;
+      bctx.beginPath();
+      bctx.moveTo(cx + size * 0.35 * Math.cos(a), cy + size * 0.35 * Math.sin(a));
+      bctx.lineTo(cx + size * 0.48 * Math.cos(a), cy + size * 0.48 * Math.sin(a));
+      bctx.lineWidth = 4;
+      bctx.lineCap = 'round';
+      bctx.stroke();
+    }
+  } else if (motif === 'moon') {
+    bctx.save();
+    bctx.beginPath();
+    bctx.arc(cx, cy, size * 0.4, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.globalCompositeOperation = 'destination-out';
+    bctx.beginPath();
+    bctx.arc(cx + size * 0.18, cy - size * 0.08, size * 0.34, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.restore();
+  } else if (motif === 'bolt') {
+    bctx.beginPath();
+    bctx.moveTo(cx + size * 0.1, cy - size * 0.5);
+    bctx.lineTo(cx - size * 0.25, cy + size * 0.05);
+    bctx.lineTo(cx, cy + size * 0.05);
+    bctx.lineTo(cx - size * 0.1, cy + size * 0.5);
+    bctx.lineTo(cx + size * 0.3, cy - size * 0.05);
+    bctx.lineTo(cx + size * 0.02, cy - size * 0.05);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'flower') {
+    for (let i = 0; i < 5; i++) {
+      const a = (Math.PI * 2 / 5) * i - Math.PI / 2;
+      bctx.beginPath();
+      bctx.ellipse(cx + size * 0.22 * Math.cos(a), cy + size * 0.22 * Math.sin(a), size * 0.18, size * 0.12, a, 0, Math.PI * 2);
+      bctx.fill();
+    }
+  } else if (motif === 'heart') {
+    bctx.beginPath();
+    bctx.moveTo(cx, cy + size * 0.35);
+    bctx.bezierCurveTo(cx - size * 0.5, cy - size * 0.1, cx - size * 0.2, cy - size * 0.5, cx, cy - size * 0.15);
+    bctx.bezierCurveTo(cx + size * 0.2, cy - size * 0.5, cx + size * 0.5, cy - size * 0.1, cx, cy + size * 0.35);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'arrow') {
+    bctx.beginPath();
+    bctx.moveTo(cx - size * 0.35, cy + size * 0.15);
+    bctx.lineTo(cx + size * 0.1, cy + size * 0.15);
+    bctx.lineTo(cx + size * 0.1, cy + size * 0.3);
+    bctx.lineTo(cx + size * 0.4, cy - size * 0.05);
+    bctx.lineTo(cx + size * 0.1, cy - size * 0.4);
+    bctx.lineTo(cx + size * 0.1, cy - size * 0.25);
+    bctx.lineTo(cx - size * 0.35, cy - size * 0.25);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'tree') {
+    bctx.beginPath();
+    bctx.arc(cx, cy - size * 0.1, size * 0.35, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.fillRect(cx - size * 0.05, cy + size * 0.15, size * 0.1, size * 0.3);
+  } else if (motif === 'mountain') {
+    bctx.beginPath();
+    bctx.moveTo(cx - size * 0.45, cy + size * 0.3);
+    bctx.lineTo(cx - size * 0.1, cy - size * 0.35);
+    bctx.lineTo(cx + size * 0.15, cy - size * 0.05);
+    bctx.lineTo(cx + size * 0.3, cy - size * 0.25);
+    bctx.lineTo(cx + size * 0.5, cy + size * 0.3);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'fish') {
+    bctx.beginPath();
+    bctx.ellipse(cx - size * 0.05, cy, size * 0.35, size * 0.18, 0, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.beginPath();
+    bctx.moveTo(cx + size * 0.28, cy);
+    bctx.lineTo(cx + size * 0.48, cy - size * 0.18);
+    bctx.lineTo(cx + size * 0.48, cy + size * 0.18);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'bird') {
+    bctx.beginPath();
+    bctx.moveTo(cx - size * 0.45, cy + size * 0.1);
+    bctx.quadraticCurveTo(cx - size * 0.15, cy - size * 0.35, cx, cy - size * 0.05);
+    bctx.quadraticCurveTo(cx + size * 0.15, cy - size * 0.35, cx + size * 0.45, cy + size * 0.1);
+    bctx.quadraticCurveTo(cx + size * 0.15, cy - size * 0.05, cx, cy + size * 0.05);
+    bctx.quadraticCurveTo(cx - size * 0.15, cy - size * 0.05, cx - size * 0.45, cy + size * 0.1);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'note') {
+    bctx.beginPath();
+    bctx.ellipse(cx - size * 0.15, cy + size * 0.3, size * 0.16, size * 0.12, -0.2, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.fillRect(cx - size * 0.01, cy - size * 0.4, size * 0.06, size * 0.7);
+    bctx.beginPath();
+    bctx.moveTo(cx + size * 0.05, cy - size * 0.4);
+    bctx.quadraticCurveTo(cx + size * 0.4, cy - size * 0.3, cx + size * 0.05, cy - size * 0.1);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'book') {
+    bctx.beginPath();
+    bctx.moveTo(cx, cy - size * 0.3);
+    bctx.lineTo(cx - size * 0.4, cy - size * 0.35);
+    bctx.lineTo(cx - size * 0.4, cy + size * 0.35);
+    bctx.lineTo(cx, cy + size * 0.3);
+    bctx.lineTo(cx + size * 0.4, cy + size * 0.35);
+    bctx.lineTo(cx + size * 0.4, cy - size * 0.35);
+    bctx.closePath();
+    bctx.fill();
+    bctx.fillStyle = palettes[selectedPaletteIdx].main;
+    bctx.beginPath();
+    bctx.moveTo(cx, cy - size * 0.3);
+    bctx.lineTo(cx, cy + size * 0.3);
+    bctx.lineWidth = 3;
+    bctx.strokeStyle = palettes[selectedPaletteIdx].main;
+    bctx.stroke();
+  } else if (motif === 'crown') {
+    bctx.beginPath();
+    bctx.moveTo(cx - size * 0.4, cy + size * 0.25);
+    bctx.lineTo(cx - size * 0.4, cy - size * 0.05);
+    bctx.lineTo(cx - size * 0.2, cy + size * 0.1);
+    bctx.lineTo(cx, cy - size * 0.3);
+    bctx.lineTo(cx + size * 0.2, cy + size * 0.1);
+    bctx.lineTo(cx + size * 0.4, cy - size * 0.05);
+    bctx.lineTo(cx + size * 0.4, cy + size * 0.25);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'flame') {
+    bctx.beginPath();
+    bctx.moveTo(cx, cy + size * 0.4);
+    bctx.quadraticCurveTo(cx - size * 0.35, cy + size * 0.1, cx - size * 0.15, cy - size * 0.25);
+    bctx.quadraticCurveTo(cx - size * 0.1, cy - size * 0.05, cx, cy - size * 0.4);
+    bctx.quadraticCurveTo(cx + size * 0.1, cy - size * 0.05, cx + size * 0.15, cy - size * 0.25);
+    bctx.quadraticCurveTo(cx + size * 0.35, cy + size * 0.1, cx, cy + size * 0.4);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'diamond') {
+    bctx.beginPath();
+    bctx.moveTo(cx, cy - size * 0.42);
+    bctx.lineTo(cx + size * 0.3, cy);
+    bctx.lineTo(cx, cy + size * 0.42);
+    bctx.lineTo(cx - size * 0.3, cy);
+    bctx.closePath();
+    bctx.fill();
+  } else if (motif === 'cross') {
+    const w = size * 0.16;
+    bctx.fillRect(cx - w / 2, cy - size * 0.4, w, size * 0.8);
+    bctx.fillRect(cx - size * 0.4, cy - w / 2, size * 0.8, w);
+  } else if (motif === 'circle2') {
+    bctx.beginPath();
+    bctx.arc(cx, cy, size * 0.32, 0, Math.PI * 2);
+    bctx.lineWidth = 6;
+    bctx.stroke();
+    bctx.beginPath();
+    bctx.arc(cx, cy, size * 0.1, 0, Math.PI * 2);
+    bctx.fill();
+  } else if (motif === 'cloud') {
+    bctx.beginPath();
+    bctx.arc(cx - size * 0.18, cy + size * 0.05, size * 0.2, 0, Math.PI * 2);
+    bctx.arc(cx + size * 0.05, cy - size * 0.05, size * 0.25, 0, Math.PI * 2);
+    bctx.arc(cx + size * 0.3, cy + size * 0.08, size * 0.18, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.fillRect(cx - size * 0.35, cy + size * 0.05, size * 0.65, size * 0.18);
+  } else if (motif === 'umbrella') {
+    bctx.beginPath();
+    bctx.arc(cx, cy - size * 0.05, size * 0.4, Math.PI, Math.PI * 2);
+    bctx.lineTo(cx + size * 0.4, cy + size * 0.05);
+    for (let i = 0; i < 4; i++) {
+      const x1 = cx + size * 0.4 - size * 0.2 * (i + 1);
+      bctx.lineTo(x1, cy - size * 0.02);
+      bctx.lineTo(x1 - size * 0.1, cy + size * 0.05);
+    }
+    bctx.closePath();
+    bctx.fill();
+    bctx.beginPath();
+    bctx.moveTo(cx, cy - size * 0.05);
+    bctx.lineTo(cx, cy + size * 0.45);
+    bctx.lineWidth = 4;
+    bctx.stroke();
+  } else if (motif === 'key') {
+    bctx.beginPath();
+    bctx.arc(cx - size * 0.2, cy - size * 0.15, size * 0.18, 0, Math.PI * 2);
+    bctx.lineWidth = 7;
+    bctx.stroke();
+    bctx.beginPath();
+    bctx.moveTo(cx - size * 0.08, cy - size * 0.02);
+    bctx.lineTo(cx + size * 0.35, cy + size * 0.35);
+    bctx.lineWidth = 6;
+    bctx.lineCap = 'round';
+    bctx.stroke();
+    bctx.beginPath();
+    bctx.moveTo(cx + size * 0.2, cy + size * 0.2);
+    bctx.lineTo(cx + size * 0.32, cy + size * 0.1);
+    bctx.lineWidth = 5;
+    bctx.stroke();
+  } else if (motif === 'globe') {
+    bctx.beginPath();
+    bctx.arc(cx, cy, size * 0.4, 0, Math.PI * 2);
+    bctx.lineWidth = 5;
+    bctx.stroke();
+    bctx.beginPath();
+    bctx.ellipse(cx, cy, size * 0.18, size * 0.4, 0, 0, Math.PI * 2);
+    bctx.stroke();
+    bctx.beginPath();
+    bctx.moveTo(cx - size * 0.4, cy);
+    bctx.lineTo(cx + size * 0.4, cy);
+    bctx.stroke();
+  } else if (motif === 'feather') {
+    bctx.beginPath();
+    bctx.moveTo(cx, cy - size * 0.45);
+    bctx.quadraticCurveTo(cx - size * 0.35, cy - size * 0.1, cx - size * 0.05, cy + size * 0.4);
+    bctx.quadraticCurveTo(cx + size * 0.05, cy + size * 0.1, cx, cy - size * 0.45);
+    bctx.fill();
+    bctx.beginPath();
+    bctx.moveTo(cx, cy - size * 0.4);
+    bctx.lineTo(cx, cy + size * 0.4);
+    bctx.lineWidth = 2;
+    bctx.stroke();
+  } else if (motif === 'drop') {
+    bctx.beginPath();
+    bctx.moveTo(cx, cy - size * 0.42);
+    bctx.quadraticCurveTo(cx + size * 0.35, cy + size * 0.1, cx, cy + size * 0.42);
+    bctx.quadraticCurveTo(cx - size * 0.35, cy + size * 0.1, cx, cy - size * 0.42);
+    bctx.fill();
+  } else if (motif === 'spiral') {
+    bctx.beginPath();
+    bctx.lineWidth = 5;
+    bctx.lineCap = 'round';
+    let prevX = cx, prevY = cy;
+    bctx.moveTo(cx, cy);
+    for (let a = 0; a < Math.PI * 5; a += 0.2) {
+      const r = size * 0.42 * (a / (Math.PI * 5));
+      const x = cx + r * Math.cos(a);
+      const y = cy + r * Math.sin(a);
+      bctx.lineTo(x, y);
+    }
+    bctx.stroke();
+  } else if (motif === 'anchor') {
+    bctx.lineWidth = 5;
+    bctx.beginPath();
+    bctx.arc(cx, cy - size * 0.3, size * 0.1, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.beginPath();
+    bctx.moveTo(cx, cy - size * 0.2);
+    bctx.lineTo(cx, cy + size * 0.4);
+    bctx.stroke();
+    bctx.beginPath();
+    bctx.moveTo(cx - size * 0.3, cy + size * 0.05);
+    bctx.lineTo(cx + size * 0.3, cy + size * 0.05);
+    bctx.stroke();
+    bctx.beginPath();
+    bctx.arc(cx, cy + size * 0.2, size * 0.25, 0.3, Math.PI - 0.3);
+    bctx.stroke();
+  }
+}
+
+function drawBase() {
+  bctx.clearRect(0, 0, 300, 300);
+  const p = palettes[selectedPaletteIdx];
+  const cx = 150, cy = 140;
+
+  bctx.fillStyle = p.bg;
+  bctx.fillRect(0, 0, 300, 300);
+
+  drawShape(shapeSelect.value, cx, cy, 95, p.main);
+  if (motifSelect.value !== 'none') {
+    const sizeScale = parseInt(motifSize.value) / 100;
+    drawMotif(motifSelect.value, cx, cy, 95 * sizeScale);
+  }
+
+  const name = teamNameInput.value.trim();
+  bctx.fillStyle = '#2C2C2A';
+  bctx.font = '900 18px "Zen Maru Gothic", sans-serif';
+  bctx.textAlign = 'center';
+  bctx.fillText(name || 'チーム名', 150, 275);
+}
+
+const motifSize = document.getElementById('motifSize');
+shapeSelect.onchange = drawBase;
+motifSelect.onchange = drawBase;
+motifSize.oninput = drawBase;
+teamNameInput.oninput = drawBase;
+drawBase();
+
+const drawCanvas = document.getElementById('drawCanvas');
+const dctx = drawCanvas.getContext('2d');
+dctx.scale(3, 3);
+const penWidth = document.getElementById('penWidth');
+let drawing = false;
+let lastX = 0, lastY = 0;
+let strokes = [];
+let currentStroke = null;
+
+function getPos(e) {
+  const rect = drawCanvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: (clientX - rect.left) * (300 / rect.width), y: (clientY - rect.top) * (300 / rect.height) };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  drawing = true;
+  const pos = getPos(e);
+  lastX = pos.x; lastY = pos.y;
+  currentStroke = { color: selectedPenColor, width: parseInt(penWidth.value), points: [pos] };
+}
+
+function moveDraw(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  const pos = getPos(e);
+  dctx.strokeStyle = selectedPenColor;
+  dctx.lineWidth = parseInt(penWidth.value);
+  dctx.lineCap = 'round';
+  dctx.lineJoin = 'round';
+  dctx.beginPath();
+  dctx.moveTo(lastX, lastY);
+  dctx.lineTo(pos.x, pos.y);
+  dctx.stroke();
+  lastX = pos.x; lastY = pos.y;
+  currentStroke.points.push(pos);
+}
+
+function endDraw() {
+  if (drawing && currentStroke) {
+    strokes.push(currentStroke);
+    currentStroke = null;
+  }
+  drawing = false;
+}
+
+drawCanvas.addEventListener('mousedown', startDraw);
+drawCanvas.addEventListener('mousemove', moveDraw);
+drawCanvas.addEventListener('mouseup', endDraw);
+drawCanvas.addEventListener('mouseleave', endDraw);
+drawCanvas.addEventListener('touchstart', startDraw, { passive: false });
+drawCanvas.addEventListener('touchmove', moveDraw, { passive: false });
+drawCanvas.addEventListener('touchend', endDraw);
+
+function redrawStrokes() {
+  dctx.clearRect(0, 0, 300, 300);
+  strokes.forEach(s => {
+    dctx.strokeStyle = s.color;
+    dctx.lineWidth = s.width;
+    dctx.lineCap = 'round';
+    dctx.lineJoin = 'round';
+    dctx.beginPath();
+    s.points.forEach((pt, i) => {
+      if (i === 0) dctx.moveTo(pt.x, pt.y); else dctx.lineTo(pt.x, pt.y);
+    });
+    dctx.stroke();
+  });
+}
+
+document.getElementById('undoBtn').onclick = () => {
+  strokes.pop();
+  redrawStrokes();
+};
+document.getElementById('clearDrawBtn').onclick = () => {
+  strokes = [];
+  dctx.clearRect(0, 0, 300, 300);
+};
+
+document.getElementById('finishBtn').onclick = () => {
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = 900;
+  finalCanvas.height = 900;
+  const fctx = finalCanvas.getContext('2d');
+  fctx.drawImage(baseCanvas, 0, 0);
+  fctx.drawImage(drawCanvas, 0, 0);
+
+  const dataUrl = finalCanvas.toDataURL('image/png');
+  const name = teamNameInput.value.trim() || 'チームロゴ';
+
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+      <meta charset="UTF-8">
+      <title>${name}</title>
+      <style>
+        body {
+          margin: 0;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #FFF8F0;
+          font-family: sans-serif;
+        }
+        img {
+          width: 90vw;
+          max-width: 500px;
+          height: auto;
+          border-radius: 16px;
+          box-shadow: 6px 6px 0 #2A2A2A;
+          border: 3px solid #2A2A2A;
+        }
+      </style>
+    </head>
+    <body>
+      <img src="${dataUrl}" alt="${name}">
+    </body>
+    </html>
+  `);
+  win.document.close();
+};
+</script>
+</body>
+</html>
