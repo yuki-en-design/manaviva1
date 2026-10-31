@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>探究データビューア (参考サイト)</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+<style>
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root { --accent: #999; }
+
+body {
+
+  font-family: 'Noto Sans JP', sans-serif;
+
+  background: #f0f0eb;
+
+  min-height: 100vh;
+
+  display: flex;
+
+  flex-direction: column;
+
+  overflow: hidden;
+
+}
+
+
+
+/* ── TOPBAR ── */
+
+.topbar {
+
+  width: 100%;
+
+  flex-shrink: 0;
+
+  background: #fff;
+
+  border-bottom: 1px solid #e4e0da;
+
+  display: flex;
+
+  flex-direction: row;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding: 12px 32px;
+
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+
+  z-index: 10;
+
+}
+
+.topbar-header { display: flex; flex-direction: column; }
+
+.topbar-title { font-size: 10px; font-weight: 900; letter-spacing: 0.1em; color: #888; }
+
+.topbar-subtitle { font-size: 16px; font-weight: 900; color: #222; line-height: 1.4; margin-top: 2px; }
+
+.field { display: flex; flex-direction: row; align-items: center; gap: 16px; }
+
+.field label { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; color: #444; white-space: nowrap; }
+
+.field select {
+
+  font-family: 'Noto Sans JP', sans-serif;
+
+  font-size: 14px;
+
+  border: 2px solid #ddd;
+
+  border-radius: 6px;
+
+  padding: 8px 16px;
+
+  background: #fafafa;
+
+  color: #222;
+
+  transition: all 0.2s ease;
+
+  outline: none;
+
+  width: 320px;
+
+  cursor: pointer;
+
+}
+
+.field select:focus { border-color: var(--accent, #0D7A6E); background: #fff; }
+
+
+
+/* ── PREVIEW ── */
+
+.preview-panel {
+
+  flex: 1;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background: #e9e7e2;
+
+  position: relative;
+
+  padding: 16px;
+
+}
+
+.slide-scale-container { transform-origin: center center; transition: transform 0.1s ease-out; }
+
+
+
+/* ── SLIDE ── */
+
+.slide {
+
+  width: 960px;
+
+  height: 540px;
+
+  background: #fff;
+
+  box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+
+  display: flex;
+
+  overflow: hidden;
+
+}
+
+
+
+/* 左カラム */
+
+.slide-left {
+
+  width: 300px;
+
+  height: 100%;
+
+  background: var(--accent, #999);
+
+  display: flex;
+
+  flex-direction: column;
+
+  color: #fff;
+
+  transition: background-color 0.3s;
+
+}
+
+.slide-img-wrap { width: 100%; height: 180px; background: rgba(0,0,0,0.1); position: relative; }
+
+.slide-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; }
+
+.slide-img-placeholder {
+
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+
+  display: flex; align-items: center; justify-content: center;
+
+  color: rgba(255,255,255,0.6); font-size: 13px; font-weight: 500;
+
+}
+
+.slide-left-content { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+
+.slide-vision { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: rgba(255,255,255,0.7); margin-bottom: 12px; }
+
+.slide-q-label {
+
+  font-size: 12px; font-weight: 900; color: #fff; margin-bottom: 8px;
+
+  background: rgba(0,0,0,0.2); display: inline-block; padding: 4px 8px; border-radius: 4px;
+
+}
+
+.slide-q-text { font-size: 16px; font-weight: 900; line-height: 1.6; }
+
+
+
+/* 右カラム */
+
+.slide-right {
+
+  flex: 1;
+
+  padding: 16px 20px 14px;
+
+  background: #faf9f7;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+}
+
+
+
+/* ── STEP0 ── */
+
+.step0-box {
+
+  background: #fff;
+
+  border-radius: 8px;
+
+  border-left: 4px solid var(--accent, #ccc);
+
+  padding: 10px 14px;
+
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+
+  display: none;
+
+  flex-direction: column;
+
+  gap: 5px;
+
+  flex-shrink: 0;
+
+}
+
+.step0-box.visible { display: flex; }
+
+.step0-header {
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 0.12em;
+
+  color: var(--accent, #999);
+
+  margin-bottom: 2px;
+
+}
+
+.step0-questions { display: flex; flex-direction: column; gap: 4px; }
+
+.step0-q {
+
+  display: flex;
+
+  gap: 6px;
+
+  align-items: flex-start;
+
+}
+
+.step0-num {
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  color: #fff;
+
+  background: var(--accent, #999);
+
+  border-radius: 50%;
+
+  width: 14px; height: 14px;
+
+  display: flex; align-items: center; justify-content: center;
+
+  flex-shrink: 0;
+
+  margin-top: 1px;
+
+}
+
+.step0-text { font-size: 11px; color: #333; line-height: 1.5; }
+
+.step0-reason {
+
+  margin-top: 4px;
+
+  padding: 5px 10px;
+
+  background: #f5f4f0;
+
+  border-radius: 4px;
+
+  font-size: 10px;
+
+  color: #888;
+
+  font-weight: 500;
+
+}
+
+
+
+/* 調べること ヘッダー */
+
+.slide-right-header {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-end;
+
+  border-bottom: 2px solid #eaeaea;
+
+  padding-bottom: 6px;
+
+  flex-shrink: 0;
+
+}
+
+.slide-right-title { font-size: 16px; font-weight: 900; color: var(--accent, #666); letter-spacing: 0.1em; }
+
+
+
+/* 調べること グリッド */
+
+.grid-investigation {
+
+  display: grid;
+
+  grid-template-columns: repeat(5, 1fr);
+
+  gap: 6px;
+
+  flex: 1;
+
+  min-height: 0;
+
+}
+
+.card-investigation {
+
+  background: #fff;
+
+  border-radius: 6px;
+
+  padding: 6px 8px;
+
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+
+  border-top: 3px solid var(--accent, #ccc);
+
+  display: flex;
+
+  flex-direction: column;
+
+  overflow: hidden;
+
+  transition: border-color 0.3s;
+
+}
+
+.item-who { grid-column: span 1; }
+
+.item-where { grid-column: span 1; }
+
+.item-when { grid-column: span 1; }
+
+.item-what { grid-column: span 1; }
+
+.item-howmuch { grid-column: span 1; }
+
+.card-title { font-size: 12px; font-weight: 900; color: var(--accent, #999); margin-bottom: 1px; font-family: Arial, Helvetica, sans-serif; }
+
+.card-sub-q { font-size: 8.5px; color: #777; font-weight: 700; margin-bottom: 4px; line-height: 1.3; padding-bottom: 3px; border-bottom: 1px dashed #eee; }
+
+.card-text { font-size: 12px; line-height: 1.35; color: #333; overflow: hidden; word-break: break-all; }
+
+.card-text.empty { color: #bbb; font-style: italic; }
+
+
+
+
+
+/* 参考サイト */
+
+.reference-area {
+
+  padding: 8px 12px;
+
+  background: #f0efe9;
+
+  border-radius: 6px;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+  border-left: 4px solid #bbb;
+
+  flex: 0.8;
+
+  min-height: 0;
+
+}
+
+.ref-label { font-size: 10px; font-weight: 900; color: #666; white-space: nowrap; background: #e4e0da; padding: 4px 8px; border-radius: 4px; line-height: 1.3; text-align: center; }
+
+.ref-links { display: flex; flex-wrap: wrap; gap: 4px 10px; padding-top: 2px; flex: 1; }
+
+.ref-text-item { font-size: 12px; color: #444; line-height: 1.4; font-weight: 500; }
+
+.keyword-item { font-size: 12px; color: #fff; background-color: var(--accent, #999); padding: 2px 6px; border-radius: 10px; line-height: 1.4; font-weight: 700; }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="topbar">
+
+  <div class="topbar-header">
+
+    <div class="topbar-title">OKINAWA INQUIRY LEARNING</div>
+
+    <div class="topbar-subtitle">探究データビューア</div>
+
+  </div>
+
+  <div class="field">
+
+    <label>探究テーマを選択</label>
+
+    <select id="q-select" onchange="onQSelect()">
+
+      <option value="">-- テーマを選んでください --</option>
+
+      <option value="0">Q1：再生可能エネルギーの普及</option>
+
+      <option value="1">Q2：豊かな自然の保護</option>
+
+      <option value="2">Q3：首里城の再建</option>
+
+      <option value="3">Q4：伝統文化の継承</option>
+
+      <option value="4">Q5：子どもの貧困</option>
+
+      <option value="5">Q6：離島医療の整備</option>
+
+      <option value="6">Q7：米軍基地問題</option>
+
+      <option value="7">Q8：観光のあり方</option>
+
+      <option value="8">Q9：働く人の低賃金</option>
+
+      <option value="9">Q10：ビジネスの継続性</option>
+
+      <option value="10">Q11：沖縄戦の記憶</option>
+
+      <option value="11">Q12：多様なルーツとの共生</option>
+
+      <option value="12">Q13：学力・進学率の格差</option>
+
+      <option value="13">Q14：若者の県外流出</option>
+
+    </select>
+
+  </div>
+
+</div>
+
+
+
+<div class="preview-panel" id="preview-panel">
+
+  <div class="slide-scale-container" id="scale-container">
+
+    <div class="slide" id="slide">
+
+
+
+      <!-- 左カラム -->
+
+      <div class="slide-left" id="slide-left">
+
+        <div class="slide-img-wrap" id="slide-img-wrap">
+
+          <div class="slide-img-placeholder">NO IMAGE</div>
+
+        </div>
+
+        <div class="slide-left-content">
+
+          <div class="slide-vision" id="slide-vision">VISION</div>
+
+          <div class="slide-q-label" id="slide-q-label">Q. --</div>
+
+          <div class="slide-q-text" id="slide-q-text">右上からテーマを選ぶと<br>ここに問いが表示されます</div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- 右カラム -->
+
+      <div class="slide-right">
+
+
+
+        <!-- STEP0 -->
+
+        <div class="step0-box" id="step0-box">
+
+          <div class="step0-header">STEP 2 ── まず、自分に聞いてみよう</div>
+
+          <div class="step0-questions">
+
+            <div class="step0-q">
+
+              <div class="step0-num">①</div>
+
+              <div class="step0-text" id="step0-q1"></div>
+
+            </div>
+
+            <div class="step0-q">
+
+              <div class="step0-num">②</div>
+
+              <div class="step0-text" id="step0-q2"></div>
+
+            </div>
+
+          </div>
+
+          <div class="step0-reason">💬 ②の理由を一言で：＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</div>
+
+        </div>
+
+
+
+        <!-- 5W2H ヘッダー -->
+
+        <div class="slide-right-header">
+
+          <div class="slide-right-title">調べること</div>
+
+        </div>
+
+
+
+        <!-- 5W2H グリッド -->
+
+        <div class="grid-investigation">
+
+          <div class="card-investigation item-who">
+
+            <div class="card-title">Who</div>
+
+            <div class="card-sub-q" id="q-who">だれが？</div>
+
+            <div class="card-text empty" id="t-who">データなし</div>
+
+          </div>
+
+          <div class="card-investigation item-where">
+
+            <div class="card-title">Where</div>
+
+            <div class="card-sub-q" id="q-where">どこで？</div>
+
+            <div class="card-text empty" id="t-where">データなし</div>
+
+          </div>
+
+          <div class="card-investigation item-when">
+
+            <div class="card-title">When</div>
+
+            <div class="card-sub-q" id="q-when">いつ？</div>
+
+            <div class="card-text empty" id="t-when">データなし</div>
+
+          </div>
+
+          <div class="card-investigation item-what">
+
+            <div class="card-title">What</div>
+
+            <div class="card-sub-q" id="q-what">なにを？</div>
+
+            <div class="card-text empty" id="t-what">データなし</div>
+
+          </div>
+
+          <div class="card-investigation item-howmuch">
+
+            <div class="card-title">How much</div>
+
+            <div class="card-sub-q" id="q-howmuch">どのくらい？</div>
+
+            <div class="card-text empty" id="t-howmuch">データなし</div>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- 参考サイト -->
+
+        <div class="reference-area" id="reference-area">
+
+          <div class="ref-label">使えるサイト<br>& キーワード</div>
+
+          <div class="ref-links" id="ref-links"></div>
+
+        </div>
+
+
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<script>
+
+function autoFitText(el, maxFontSize) {
+  let fontSize = maxFontSize;
+  el.style.fontSize = fontSize + 'px';
+  while (el.scrollHeight > el.clientHeight && fontSize > 8) {
+    fontSize -= 0.5;
+    el.style.fontSize = fontSize + 'px';
+  }
+}
+
+function adjustScale() {
+
+  const panel = document.getElementById('preview-panel');
+
+  const container = document.getElementById('scale-container');
+
+  const scale = Math.min((panel.clientWidth - 24) / 960, (panel.clientHeight - 24) / 540, 1);
+
+  container.style.transform = `scale(${scale})`;
+
+}
+
+window.addEventListener('load', () => { adjustScale(); resetSlide(); });
+
+window.addEventListener('resize', adjustScale);
+
+
+
+const STEP0 = [
+
+  { q1: "電気代が急に上がったら、まず何を我慢する？", q2: "それでも「環境のためなら仕方ない」と思う？それとも「安さを優先したい」？" },
+
+  { q1: "「ここ開発されたんだ…」と感じた場所、思い浮かぶ？", q2: "生活が便利になるなら、多少自然が減るのは仕方ないと思う？" },
+
+  { q1: "なくなってショックだった場所や物ってある？", q2: "それは「元通り」に戻したい？それとも「新しくしてもいい」と思う？" },
+
+  { q1: "エイサーや三線に、最近いつ触れた？（授業でもOK）", q2: "正直、「やる意味がよく分からない伝統」でも続けるべきだと思う？" },
+
+  { q1: "周りで「この人ちょっと大変そうだな」と感じたことある？（なくてもOK）", q2: "同じ努力でも結果が変わるのは「仕方ない」と思う？それとも「変えるべき」？" },
+
+  { q1: "病院までどれくらい時間かかる？不安に感じたことある？", q2: "命に関わる医療に地域差があるのは「仕方ない」と思う？" },
+
+  { q1: "基地の近くを通ったり、音を聞いたことある？そのときどう感じた？", q2: "基地は「必要だからある」と思う？それとも「減らすべき」と思う？" },
+
+  { q1: "観光地で「人多すぎ」と思ったことある？どんな場面？", q2: "それでも観光客は「増えた方がいい」と思う？それとも「抑えた方がいい」？" },
+
+  { q1: "将来どんな働き方したい？沖縄でイメージできる？", q2: "給料が低くても「沖縄で働きたい」？それとも「県外に出たい」？" },
+
+  { q1: "「沖縄っぽい」と思う商品や店、思い浮かぶ？", q2: "それって「沖縄らしさ」だけで売れてると思う？それとも別の強みがある？" },
+
+  { q1: "戦争の話を誰かから直接聞いたことある？どんな場面？", q2: "戦争の話は「学ぶ必要がある」と思う？それとも「自分には遠い」と感じる？" },
+
+  { q1: "外国ルーツの人と話したことある？どんな印象だった？", q2: "文化や言葉が違う人と関わるのは「楽しそう」？それとも「少し不安」？" },
+
+  { q1: "塾や勉強環境って、自分の周りで差があると感じる？", q2: "環境で学力に差が出るのは「仕方ない」と思う？それとも「変えるべき」？" },
+
+  { q1: "将来、沖縄でやりたいことって思い浮かぶ？", q2: "「沖縄に残りたい」？それとも「一度は外に出たい」？" },
+
+];
+
+
+
+const QUESTIONS = [
+
+  { qnum:"Q1", vision:"将来像 1：自然・歴史・伝統・文化を大切にする島", color:"#0D7A6E", q:"沖縄の島々で再生可能エネルギーがなかなか広がらないのはなぜか。広めるには、何から手をつければいいだろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/VCStcXVraPCkqWBW.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"再生可能エネルギーを広めることで恩恵を受ける人はだれ？逆に再生可能エネルギーが導入されると困る人はいる？",r:"沖縄県HP、沖縄電力HP"}, where:{q:"どこで？",a:"沖縄県内で再生可能エネルギーに力を入れている島や地域はどこ？",r:"各自治体のHP、事例紹介記事"}, when:{q:"いつ？",a:"沖縄県は、再生可能エネルギーについて、数値目標をどのように、いつまでの期限で立てている？",r:"沖縄県カーボンニュートラル計画"}, what:{q:"なにを？",a:"沖縄県にはどんな計画があるか？太陽光や風力など、沖縄にはどんな再生可能エネルギーが合っている？",r:"資源エネルギー庁、環境省"}, howmuch:{q:"どのくらい？",a:"再生可能エネルギーの導入にいくらかかる？私たちの電気代はどう変わる？",r:"県の予算資料"}, why:{q:"なぜ？",a:"沖縄県において、現在の再生可能エネルギーの普及率に留まっているのはなぜだろう。",r:"ニュース記事、専門家のコラム"} },
+
+    keywords:["再生可能エネルギー","太陽光発電","風力発電","エネルギー自給","電力コスト","化石燃料","送電網","離島"] },
+
+  { qnum:"Q2", vision:"将来像 1：自然・歴史・伝統・文化を大切にする島", color:"#0D7A6E", q:"沖縄の豊かな自然は、なぜ少しずつ失われているのか。次の世代に残すには、何から手をつければいいだろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/mxQYzuOEYZVkeXkf.webp",
+
+    w5h2: { who:{q:"だれが？",a:"沖縄の自然を守るために活動しているのはどんな人たち？沖縄の自然を守ることで恩恵を受けるのはどんな人たち？",r:"環境NPO、地域住民の会"}, where:{q:"どこで？",a:"沖縄の中でも、特に自然が失われている問題が起きている地域はどこだろう？",r:"環境統計データ、サンゴの白化マップ、自然保護区エリア"}, when:{q:"いつ？",a:"サンゴの海ややんばるの森の問題は、いつ頃からひどくなった？",r:"沖縄県環境白書、過去のニュース記事"}, what:{q:"なにを？",a:"サンゴの海ややんばるの森で、今どんな問題が起きている？問題を惹き起こしている原因や背景は何？",r:"環境省、OISTの研究報告"}, howmuch:{q:"どのくらい？",a:"失われた自然を元に戻すには、どれくらいのお金や時間がかかる？それはコスト（無駄遣い）か投資か？",r:"沖縄県予算、自然保護活動の事業費"}, why:{q:"なぜ？",a:"なぜ「街を発展させること」と「自然を守ること」の両立は難しいの？なぜその2つが対立するの？",r:"農家や観光事業者、行政の異なる意見"} },
+
+    keywords:["サンゴ礁","やんばる","生物多様性","自然保護","環境破壊","気候変動","エコツーリズム","ブルーエコノミー"] },
+
+  { qnum:"Q3", vision:"将来像 1：自然・歴史・伝統・文化を大切にする島", color:"#0D7A6E", q:"首里城の再建に、若い世代はどう関わっていけばいいのか。次の世代に受け継ぐには、何が必要だろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/OcMWpsUFyLNFZrKr.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"首里城の再建は誰が中心に進めている？中高生や若者はどう関わっている？",r:"首里城復興HP、参加型プロジェクト記事"}, where:{q:"どこで？",a:"復元作業はどこで、どんなふうに進められて、公開されている？",r:"NHK、琉球新報の特集記事"}, when:{q:"いつ？",a:"焼失してしまったのはいつ？再建のスケジュールはどうなっている？いつ完成する予定？",r:"内閣府沖縄担当部局"}, what:{q:"なにを？",a:"ただ建物を立て直すだけでなく、何を受け継ごうとしているの？",r:"文化庁、沖縄県立博物館・美術館HP"}, howmuch:{q:"どのくらい？",a:"再建には全部でいくらかかる？その財源は？",r:"国・県の予算資料、財団の報告書"}, why:{q:"なぜ？",a:"なぜ首里城を再建しないといけないの？新しい別の物を作っちゃいけないの？",r:"沖縄県文化振興会HP、職人のインタビュー"} },
+
+    keywords:["首里城","復元","琉球王国","伝統技術","文化財","若者参加","クラウドファンディング","まちづくり"] },
+
+  { qnum:"Q4", vision:"将来像 1：自然・歴史・伝統・文化を大切にする島", color:"#0D7A6E", q:"沖縄の伝統文化が若い世代になかなか伝わらないのはなぜか。伝えていくには、どんな方法があるだろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/eaqDdcPLjXolOPTK.webp",
+
+    w5h2: { who:{q:"だれが？",a:"伝統文化（芸能、工芸品、食、言語、風習）を今守っているのは誰？",r:"沖縄県文化振興会HP、各保存会のHP"}, where:{q:"どこで？",a:"伝統文化がよく残っている地域と、そうでない地域にはどんな違いがある？",r:"各市町村の文化財HP"}, when:{q:"いつ？",a:"普段の生活で伝統文化に触れる機会はいつある？",r:"沖縄タイムス・琉球新報の文化特集"}, what:{q:"なにを？",a:"若い人たちにとって、沖縄の伝統文化とかかわりが薄くなってきたと感じる原因？",r:"文化に関する世論調査、若者向けアンケート"}, howmuch:{q:"どのくらい？",a:"伝統文化を守り、広めていくためことにどのような価値があるのだろうか？",r:"日本遺産ポータルサイト"}, why:{q:"なぜ？",a:"沖縄の伝統文化が若い世代になかなか伝わらないのはなぜか？",r:"社会学・文化人類学のコラム"} },
+
+    keywords:["エイサー","三線","紅型","琉球舞踊","うちなーぐち","組踊","伝統工芸","無形文化遺産"] },
+
+  { qnum:"Q5", vision:"将来像 2：心豊かで、安全・安心に暮らせる島", color:"#185FA5", q:"沖縄の子どもの貧困率が高いままなのはなぜか。変えていくには、どこから手をつければいいだろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/gmtKuQIFeuvJMxUa.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"貧困で困っているのは誰？（子ども、ひとり親、地域など）",r:"沖縄県子どもの貧困対策計画"}, where:{q:"どこで？",a:"県内のどこで支援（助け）を受けられるの？",r:"沖縄県調査報告書、フードバンク・フードドライブ"}, when:{q:"いつ？",a:"沖縄の子どもの貧困問題を知るきっかけになったのはいつ？（空白にして生徒に設定させてもいいのでは？）",r:"過去のニュース特集、沖縄県統計資料"}, what:{q:"なにを？",a:"貧困ってどういう状態のことをいうのかな？（年収、家庭状況など）",r:"子ども食堂ネットワーク、支援NPOの報告"}, howmuch:{q:"どのくらい？",a:"全国平均と沖縄を比べて、どのくらい沖縄の貧困は深刻なのかな？",r:"沖縄県予算概要、内閣府沖縄関連予算"}, why:{q:"なぜ？",a:"なぜ沖縄の貧困率は全国より高いまま、抜け出しにくいの？",r:"低賃金・非正規雇用・若年出産の統計（沖縄）"} },
+
+    keywords:["子どもの貧困","貧困率","子ども食堂","奨学金","就学援助","ひとり親","格差","セーフティネット"] },
+
+  { qnum:"Q6", vision:"将来像 2：心豊かで、安全・安心に暮らせる島", color:"#185FA5", q:"離島で安心して医療を受けられる環境がなかなか整わないのはなぜか。整えるには、何が必要だろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/tKhITGpWgdtUIhXg.webp",
+
+    w5h2: { who:{q:"だれが？",a:"離島の医療を担っているのは誰だろう？",r:"離島医療に従事する医師のインタビュー"}, where:{q:"どこで？",a:"お医者さんがいない地区や、特にお医者さん不足で困っている島はどこ？",r:"沖縄県HP、医師会HP、医療系ニュースサイト"}, when:{q:"いつ？",a:"離島では治療できず、沖縄本島の病院に運ばないといけないのはどんな時？どれぐらいの時間がかかるの？生命に影響はあるの？",r:"離島ヘリ搬送の事例記事、厚労省無医地区調査"}, what:{q:"なにを？",a:"医療格差ってどういう状態をいうのかな？",r:"沖縄タイムス・琉球新報の離島医療特集"}, howmuch:{q:"どのくらい？",a:"どれぐらいの人が、離島から本島に医療を受けるために往来したりドクターヘリなど搬送されたりしているかな？",r:"沖縄県HP、医師会HP、医療系ニュースサイト"}, why:{q:"なぜ？",a:"なぜ離島でずっと働き続けてくれるお医者さんや看護師さんを集めるのが難しいの？",r:"厚労省オンライン診療ガイド、実証実験のニュース"} },
+
+    keywords:["離島医療","救急搬送","ドクターヘリ","無医地区","遠隔診療","医師不足","インフラ","生活コスト"] },
+
+  { qnum:"Q7", vision:"将来像 2：心豊かで、安全・安心に暮らせる島", color:"#185FA5", q:"沖縄に全国の米軍専用施設の約7割が集中しているのはなぜか。その背景を知り、自分の言葉で語れるようになるには、何が必要だろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/QGyPKaaiaOHriXPB.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"基地があることで、影響を受けているのは誰？（住んでいる人、地主、国など）",r:"沖縄県HP、防衛省HP、市民団体HP"}, where:{q:"どこで？",a:"米軍基地は本島のどこに集中している？街づくりにどう影響している？",r:"地図アプリ、内閣府沖縄担当"}, when:{q:"いつ？",a:"いつ、どんな歴史的な出来事があって沖縄に基地が集中することになったの？",r:"サンフランシスコ講和条約の解説、防衛省・沖縄県の基地面積統計"}, what:{q:"なにを？",a:"基地が集中していることで、毎日の生活にどんな問題（騒音や事件など）が起きている？（良いところ、悪いところ、両方を考えよう）",r:"沖縄タイムス・琉球新報の基地問題特集、沖縄関係歴史書"}, howmuch:{q:"どのくらい？",a:"基地があることでもらえるお金と、基地があるせいで損しているお金はどれくらい？",r:"跡地利用の試算"}, why:{q:"なぜ？",a:"なぜ日本の他の場所ではなく、沖縄ばかりに基地が集中し続けているの？",r:"安全保障に関する専門家のコラム、NHK解説記事"} },
+
+    keywords:["米軍基地","日米地位協定","沖縄戦後史","基地負担","騒音","軍用地料","普天間","辺野古"] },
+
+  { qnum:"Q8", vision:"将来像 3：希望と活力にあふれる豊かな島", color:"#C05A10", q:"観光客が増えているのに、なぜ暮らしへの恩恵が実感しにくいのか。みんなにとってよい観光のあり方にするには、何が必要だろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/lDdsusAbqlSmIzYj.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"観光客が増えてもうかっているのは誰？逆に生活が不便になっているのは誰？",r:"観光業界のレポート、県民アンケート報告"}, where:{q:"どこで？",a:"沖縄のどのエリアや観光地で、地元の人と観光客のトラブルが起きている？",r:"各市町村HP、観光協会の報告"}, when:{q:"いつ？",a:"一年の中で、観光客が増えることで地元の人たちが一番困る時期はいつ？",r:"観光庁の月別統計、交通渋滞データ"}, what:{q:"なにを？",a:"観光客が増えすぎて起きる問題にはどんなものがある？",r:"NHK・沖縄タイムス・琉球新報"}, howmuch:{q:"どのくらい？",a:"観光で稼いだお金のうち、どれくらいが沖縄に残り、どれくらいが県外の大企業などに流れているの？",r:"沖縄県統計資料、内閣府"}, why:{q:"なぜ？",a:"観光客がたくさんお金を使っても、なぜ沖縄の人たちの給料は上がりにくいの？",r:"経済アナリストの分析、宿泊業の資本構造（県外・外資）"} },
+
+    keywords:["観光収入","オーバーツーリズム","観光公害","消費構造","宿泊業","土産品","持続可能な観光","外資"] },
+
+  { qnum:"Q9", vision:"将来像 3：希望と活力にあふれる豊かな島", color:"#C05A10", q:"沖縄で働く人の賃金が全国と比べて低いのはなぜか。変えていくには、何ができるだろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/gJnEkqPryLVPdxiq.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"沖縄には、どのような人達（世代や性別）がどのような職業についている？",r:"厚労省「職業情報提供サイト」、県労働局"}, where:{q:"どこで？",a:"賃金が高い仕事や企業はどんな業種が多い？その中で沖縄にはない業種はどんなもの？",r:"沖縄IT津梁パーク関連記事、企業立地情報"}, when:{q:"いつ？",a:"沖縄の賃金が「全国で一番低いレベル」から抜け出せなくなったのはいつ頃から？",r:"過去からの労働統計推移"}, what:{q:"なにを？",a:"沖縄の仕事にはどんな業種がある？",r:"沖縄県経済白書、経産省のデータ"}, howmuch:{q:"どのくらい？",a:"沖縄の平均年収は全国と比べていくら低いの？物価の高さと釣り合っている？",r:"求人サイト統計、厚労省賃金構造基本統計"}, why:{q:"なぜ？",a:"沖縄は、なぜ働く人の賃金を上がらない仕組みになっている？（特徴や弱点）",r:"国税庁民間給与統計、労働生産性に関するレポート"} },
+
+    keywords:["平均賃金","非正規雇用","最低賃金","労働環境","正規雇用","産業構造","職業訓練","働き方"] },
+
+  { qnum:"Q10", vision:"将来像 3：希望と活力にあふれる豊かな島", color:"#C05A10", q:"沖縄ならではのビジネスで長続きしているものとそうでないものは何が違うのか。成功させるには、何が必要だろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/nZccrYtWhErloJMZ.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"沖縄で会社をつくって、長く成功しているのはどんな人や企業？",r:"沖縄県産業振興公社、起業家インタビュー記事"}, where:{q:"どこで？",a:"沖縄発の企業は、どのような地域や国と取引をしている？",r:"輸出支援機構、JETRO沖縄"}, when:{q:"いつ？",a:"ブームがすぐ終わる中で、ずっと愛されるブランドに変わるタイミングはいつ？",r:"企業の創業ストーリー、歴史"}, what:{q:"なにを？",a:"成功しているビジネスは「沖縄らしさ」をどんなふうに商品やサービスにしている？",r:"沖縄の老舗企業やヒット商品の分析記事"}, howmuch:{q:"どのくらい？",a:"沖縄で長く成功していく企業にしていくためにはどれくらいのお金と時間がかかるの？",r:"ベンチャー投資統計、県の創業支援金情報"}, why:{q:"なぜ？",a:"なぜ「沖縄ブーム」にのっかっただけのビジネスは、すぐに消えてしまうの？",r:"マーケティング専門家の分析、Forbes JAPAN"} },
+
+    keywords:["販路","輸送コスト","ブランド化","後継者","資金調達","市場規模","差別化","島外展開"] },
+
+  { qnum:"Q11", vision:"将来像 4：世界に開かれた交流と共生の島", color:"#7B2D5E", q:"沖縄戦の記憶が次の世代に伝わりにくくなっているのはなぜか。伝えていくには、どんな方法があるだろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/xzNOIGDwofqlJMbl.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"今、沖縄戦のことを語り継ぐ活動（平和ガイドなど）をしているのはどんな人たち？",r:"沖縄県平和祈念資料館HP、学生団体の活動記事"}, where:{q:"どこで？",a:"学校の授業以外で、戦争について学べる場所（ガマや戦跡など）は沖縄のどこにある？",r:"ひめゆり平和祈念資料館、各地域の戦跡マップ、NHK"}, when:{q:"いつ？",a:"当時生きていた当事者から直接戦争の話を聞けなくなるタイムリミットはいつ来る？",r:"高齢化に関する統計、平和関連ニュース記事"}, what:{q:"なにを？",a:"沖縄戦の出来事として、自分たちが知っていることは何？逆に知らないことにはどんなものがある？",r:"内閣府沖縄政策、那覇市平和交流・男女参画課"}, howmuch:{q:"どのくらい？",a:"ガマなどの戦跡を残したり、平和学習を続けたりするには、1年間にどれくらいのお金が必要？",r:"沖縄県予算、文化財保護の関連資料"}, why:{q:"なぜ？",a:"若い人たちが、沖縄戦を学ぶ理由は何？",r:"平和教育の課題に関する論考、戦後80年に関する意識調査（沖縄調査／全国調査）"} },
+
+    keywords:["沖縄戦","慰霊の日","体験者","平和教育","デジタルアーカイブ","戦跡","ひめゆり","語り継ぎ"] },
+
+  { qnum:"Q12", vision:"将来像 4：世界に開かれた交流と共生の島", color:"#7B2D5E", q:"沖縄にルーツの違う人たちが暮らしているのに、お互いをよく知らない状況があるのはなぜか。つながりをつくるには、何ができるだろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/CUsKRVhpNEScbWVN.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"今、沖縄にはどんな国から来た人や、どんなルーツを持った人たちが暮らしている？",r:"出入国在留管理庁の統計、おきなわ多文化共生推進"}, where:{q:"どこで？",a:"いろいろな国の人が多く暮らしているのは沖縄のどの地域か？",r:"各自治体の多文化共生推進プラン、コミュニティの分断に関する社会学的な分析"}, when:{q:"いつ？",a:"外国から来た人などが沖縄で急に増え始めたのは、いつ頃から？",r:"労働力不足と外国人労働者の推移データ、JICA沖縄多文化共生資料"}, what:{q:"なにを？",a:"言葉や文化、生活習慣が違うことで、普段の生活でどんなことが起きている？",r:"多文化共生に関するニュース記事、NHKやさしいことばニュース"}, howmuch:{q:"どのくらい？",a:"仲良くなるきっかけを作るために、どれくらいのお金や人が必要？",r:"総務省多文化共生推進プログラム、沖縄の自治体の予算"}, why:{q:"なぜ？",a:"同じ町に住んでいるのに、なぜお互いに話したり深く知ったりする機会が少ないの？",r:"JICA沖縄「外国人材と多文化共生」資料"} },
+
+    keywords:["ウチナーンチュ","外国人住民","アメラジアン","移住者","多文化","言語の壁","ネットワーク","国際交流"] },
+
+  { qnum:"Q13", vision:"将来像 5：多様な能力を発揮し、未来を拓く島", color:"#2D6A2D", q:"沖縄の子どもたちの学力や進学率が全国と比べて差があるのはなぜか。縮めるには、何が必要だろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/zPITisjzLKKjmxlZ.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"全国に比べ、学力が伸び悩んでいるのはどのような生徒たちか？高校卒業後、進学しないという選択をするのはどのような生徒たちか？",r:"沖縄県教育委員会、教育NPOの報告"}, where:{q:"どこで？",a:"全国に比べ、塾の数など、勉強できる環境に違いはあるのか？また、本島と離島、あるいは市町村でも違いはあるのか？",r:"沖縄県離島振興計画、地域ごとの学習塾分布"}, when:{q:"いつ？",a:"いつから全国と沖縄の学力や進学率の差が生まれたのか？全国との差はどの学年（小学校・中学校）から開き始めるか？",r:"沖縄タイムス・琉球新報の教育特集記事"}, what:{q:"なにを？",a:"全国学力テストの点数（小学校・中学校）や大学に行く人の割合は、沖縄と全国で具体的にどれくらい差がある？",r:"文科省の全国学力調査、学校基本調査"}, howmuch:{q:"どのくらい？",a:"沖縄と全国で学校以外の教育にかける費用に差があるのか？県外の大学に行く場合、沖縄からだと本土の学生より交通費や生活費がいくら多くかかる？",r:"離島出身者の体験記事、奨学金情報"}, why:{q:"なぜ？",a:"なぜ沖縄から大学に進学する人の割合と学力は、全国に比べて低いの？（お金？勉強習慣？情報不足？家庭環境？生活習慣？）",r:"教員不足・交通費・家庭環境に関する統計"} },
+
+    keywords:["学力","進学率","全国学力調査","離島教育","塾格差","奨学金","GIGAスクール","教員不足"] },
+
+  { qnum:"Q14", vision:"将来像 5：多様な能力を発揮し、未来を拓く島", color:"#2D6A2D", q:"沖縄で育った若者が島を出ていきやすいのはなぜか。残りたいと思える場所にするには、何ができるだろう？", image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/yOPvWYILlbJqNNPz.jpg",
+
+    w5h2: { who:{q:"だれが？",a:"何歳くらいの、どんな立場の若者が、沖縄を離れて県外に引っ越しているの？",r:"沖縄県人口統計、住民基本台帳人口移動報告"}, where:{q:"どこで？",a:"沖縄を出た若者たちは、県外のどの街（東京？大阪？）に集まって住んでいるの？沖縄の中で人口の流出が多い地域はどこか？",r:"移住先ランキング、自治体のデータ"}, when:{q:"いつ？",a:"若者がドッと沖縄を出ていくタイミングは、進学の時？就職の時？それとも別の時？",r:"国勢調査、年齢別の転出入データ"}, what:{q:"なにを？",a:"若者たちが沖縄では見つけられなくて、県外に求めているもの（仕事？給料？遊び？）って何？",r:"沖縄県若者意識調査、転出入に関するアンケート"}, howmuch:{q:"どのくらい？",a:"若者が県外に出てしまうことで、沖縄の経済はどれくらいのお金（税金など）を損しているの？",r:"内閣府地方創生関連資料、地域経済への影響試算"}, why:{q:"なぜ？",a:"「沖縄が好き！」と思っていても、結局島を出ちゃったり、戻ってこなかったりするのはなぜ？逆に、戻ってくる人たちはなぜ戻ったのか",r:"Uターン就職のハードルに関する記事、労働条件の比較"} },
+
+    keywords:["人口流出","若者","県外進学","Uターン","賃金格差","定住促進","関係人口","地域おこし"] },
+
+];
+
+
+
+function onQSelect() {
+
+  const idx = document.getElementById('q-select').value;
+
+  if (idx === "") { resetSlide(); return; }
+
+  const q = QUESTIONS[+idx];
+
+  const s = STEP0[+idx];
+
+  const color = q.color || "#999";
+
+  document.documentElement.style.setProperty('--accent', color);
+
+
+
+  document.getElementById('slide-vision').textContent = q.vision;
+
+  document.getElementById('slide-q-label').textContent = q.qnum;
+
+  document.getElementById('slide-q-text').textContent = q.q;
+
+
+
+  const wrap = document.getElementById('slide-img-wrap');
+
+  if (q.image) {
+
+    const proxy = "https://images.weserv.nl/?url=" + encodeURIComponent(q.image.replace(/^https?:\/\//, ''));
+
+    wrap.innerHTML = `<img class="slide-img" src="${proxy}" alt="" crossorigin="anonymous" onerror="this.src='${q.image}'; this.removeAttribute('crossorigin');">`;
+
+  }
+
+
+
+  // STEP0
+
+  const box = document.getElementById('step0-box');
+
+  if (s) {
+
+    document.getElementById('step0-q1').textContent = s.q1;
+
+    document.getElementById('step0-q2').textContent = s.q2;
+
+    box.classList.add('visible');
+
+  } else {
+
+    box.classList.remove('visible');
+
+  }
+
+
+
+  // 調べること
+
+  const w = q.w5h2;
+
+  ['who','where','when','what','howmuch'].forEach(k => {
+
+    document.getElementById(`q-${k}`).textContent = w[k].q;
+
+    const t = document.getElementById(`t-${k}`);
+
+    t.textContent = w[k].a;
+
+    t.classList.remove('empty');
+
+    autoFitText(t, 12);
+
+  });
+
+
+
+  // 参考サイト＆キーワード
+
+  const refArea = document.getElementById('reference-area');
+
+  const refLinks = document.getElementById('ref-links');
+
+  refLinks.innerHTML = '';
+
+  const refs = ['who','where','when','what','howmuch']
+
+    .map(k => q.w5h2[k] && q.w5h2[k].r ? q.w5h2[k].r : null)
+
+    .filter(Boolean);
+
+  if (refs.length || (q.keywords && q.keywords.length)) {
+
+    refs.forEach(r => {
+
+      const d = document.createElement('div');
+
+      d.className = 'ref-text-item';
+
+      d.textContent = '・' + r;
+
+      refLinks.appendChild(d);
+
+    });
+
+    q.keywords.forEach(k => {
+
+      const s = document.createElement('span');
+
+      s.className = 'keyword-item';
+
+      s.textContent = '#' + k;
+
+      refLinks.appendChild(s);
+
+    });
+
+    refArea.style.display = 'flex';
+
+    autoFitText(refLinks, 12);
+
+  } else {
+
+    refArea.style.display = 'none';
+
+  }
+
+}
+
+
+
+function resetSlide() {
+
+  document.documentElement.style.setProperty('--accent', '#999');
+
+  document.getElementById('slide-vision').textContent = 'VISION';
+
+  document.getElementById('slide-q-label').textContent = 'Q. --';
+
+  document.getElementById('slide-q-text').innerHTML = 'テーマを選ぶと<br>ここに問いが表示されます';
+
+  document.getElementById('slide-img-wrap').innerHTML = '<div class="slide-img-placeholder">NO IMAGE</div>';
+
+  document.getElementById('step0-box').classList.add('visible');
+
+  document.getElementById('step0-q1').textContent = '（テーマを選ぶと表示されます）';
+
+  document.getElementById('step0-q2').textContent = '（テーマを選ぶと表示されます）';
+
+  document.getElementById('reference-area').style.display = 'flex';
+
+  const refLinks = document.getElementById('ref-links');
+
+  refLinks.innerHTML = '<div class="ref-text-item">（テーマを選ぶと表示されます）</div>';
+
+  autoFitText(refLinks, 12);
+
+  ['who','where','when','what','howmuch'].forEach(k => {
+
+    document.getElementById(`q-${k}`).textContent = '問い';
+
+    const t = document.getElementById(`t-${k}`);
+
+    t.textContent = 'テーマを選ぶと表示されます';
+
+    t.classList.add('empty');
+
+    autoFitText(t, 12);
+
+  });
+
+}
+
+</script>
+
+</body>
+
+</html>
