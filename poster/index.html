@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>探究ポスターメーカー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent: #999;
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: #f0f0eb;
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ── LEFT: FORM ── */
+.form-panel {
+  width: 400px;
+  flex-shrink: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 28px 24px;
+  background: #fff;
+  border-right: 1px solid #e4e0da;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-title {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #aaa;
+}
+.form-subtitle {
+  font-size: 18px;
+  font-weight: 900;
+  color: #1a1a1a;
+  line-height: 1.3;
+  margin-top: 4px;
+}
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #999;
+}
+
+.field select,
+.field textarea {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  border: 1.5px solid #e0dbd4;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #faf9f7;
+  color: #1a1a1a;
+  transition: border-color 0.2s;
+  outline: none;
+  resize: none;
+  width: 100%;
+}
+.field select:focus,
+.field textarea:focus { border-color: var(--accent, #0D7A6E); background: #fff; }
+
+.q-preview {
+  background: #f5f3ef;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: #555;
+  min-height: 56px;
+  border-left: 3px solid var(--accent, #ddd);
+  transition: border-color 0.3s;
+}
+
+.char-count {
+  font-size: 10px;
+  color: #bbb;
+  text-align: right;
+  margin-top: -2px;
+}
+
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.save-btn-main {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent, #0D7A6E);
+  color: #fff;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.save-btn-main:hover { opacity: 0.87; transform: translateY(-1px); }
+.save-btn-main:active { transform: scale(0.97); }
+
+.save-btn-sub {
+  width: 100%;
+  padding: 10px;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  background: transparent;
+  color: #888;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.save-btn-sub:hover { border-color: #bbb; color: #555; background: #fafafa; }
+
+/* ── RIGHT: PREVIEW ── */
+.preview-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px;
+  background: #e4e0da;
+  overflow: auto;
+}
+
+/* ── POSTER ── */
+.poster {
+  width: 400px;
+  min-width: 400px;
+  flex-shrink: 0;
+  background: #fff;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.poster-header {
+  padding: 0;
+  background: var(--accent, #0D7A6E);
+  display: flex;
+  flex-direction: column;
+}
+
+.poster-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+  opacity: 0.85;
+}
+.poster-img-placeholder {
+  width: 100%;
+  height: 140px;
+  background: rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.4);
+  font-size: 11px;
+}
+
+.poster-header-text {
+  padding: 16px 22px 18px;
+}
+.poster-vision {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.poster-q-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 5px;
+}
+.poster-q-text {
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.6;
+}
+.poster-team {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  margin-top: 10px;
+  letter-spacing: 0.06em;
+}
+
+.poster-body {
+  padding: 20px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.poster-section-label {
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent, #0D7A6E);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.poster-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.2;
+}
+
+.poster-section-content {
+  font-size: 12px;
+  line-height: 1.75;
+  color: #2a2a2a;
+  min-height: 36px;
+  background: #f8f7f5;
+  padding: 10px 13px;
+  border-left: 3px solid var(--accent, #0D7A6E);
+}
+.poster-section-content.empty {
+  color: #ccc;
+  font-style: italic;
+  border-left-color: #e0dbd4;
+}
+
+.poster-footer-bar {
+  height: 5px;
+  background: var(--accent, #0D7A6E);
+}
+</style>
+</head>
+<body>
+
+<div class="form-panel">
+  <div>
+    <div class="form-title">沖縄探究学習</div>
+    <div class="form-subtitle">仮説ポスターメーカー</div>
+  </div>
+
+  <div class="field">
+    <label>① 探究テーマを選ぶ</label>
+    <select id="q-select" onchange="onQSelect()">
+      <option value="">-- テーマを選んでください --</option>
+      <option value="0">Q1：再生可能エネルギーの普及</option>
+      <option value="1">Q2：豊かな自然の保護</option>
+      <option value="2">Q3：首里城の再建</option>
+      <option value="3">Q4：伝統文化の継承</option>
+      <option value="4">Q5：子どもの貧困</option>
+      <option value="5">Q6：離島医療の整備</option>
+      <option value="6">Q7：米軍基地問題</option>
+      <option value="7">Q8：観光のあり方</option>
+      <option value="8">Q9：働く人の低賃金</option>
+      <option value="9">Q10：ビジネスの継続性</option>
+      <option value="10">Q11：沖縄戦の記憶</option>
+      <option value="11">Q12：多様なルーツとの共生</option>
+      <option value="12">Q13：学力・進学率の格差</option>
+      <option value="13">Q14：若者の県外流出</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>問いの文言（自動表示）</label>
+    <div class="q-preview" id="q-preview">テーマを選ぶと問いが表示されます</div>
+  </div>
+
+  <div class="field">
+    <label>② 仮説 — なぜそうなっているのか</label>
+    <textarea id="hypothesis" rows="3" maxlength="300"
+      placeholder="私たちは〜だと思う。"
+      oninput="updatePoster()"></textarea>
+    <div class="char-count"><span id="h-count">0</span> / 300文字</div>
+  </div>
+
+  <div class="field">
+    <label>③ 仮説の理由 — 調べて気づいたこと</label>
+    <textarea id="reason" rows="3" maxlength="250"
+      placeholder="なぜなら〜だからだ。"
+      oninput="updatePoster()"></textarea>
+    <div class="char-count"><span id="r-count">0</span> / 250文字</div>
+  </div>
+
+  <div class="field">
+    <label>④ 仮提案 — どうすればいいか</label>
+    <textarea id="proposal" rows="3" maxlength="300"
+      placeholder="だから〜すればいいんじゃないか。"
+      oninput="updatePoster()"></textarea>
+    <div class="char-count"><span id="p-count">0</span> / 300文字</div>
+  </div>
+
+  <div class="field">
+    <label>⑤ チーム名（任意）</label>
+    <textarea id="team" rows="1" maxlength="30"
+      placeholder="例：チームA"
+      oninput="updatePoster()"></textarea>
+  </div>
+
+  <div class="btn-group">
+    <button class="save-btn-main" id="main-btn" onclick="savePoster()">
+      ⬇ ポスターを保存する
+    </button>
+    <button class="save-btn-sub" onclick="openPoster()">
+      うまくいかない場合はこちら（新しいタブで開く）
+    </button>
+  </div>
+</div>
+
+<div class="preview-panel">
+  <div class="poster" id="poster">
+    <div class="poster-header" id="poster-header" style="background:#ddd">
+      <div class="poster-img-placeholder" id="poster-img-wrap">
+        テーマを選ぶと画像が表示されます
+      </div>
+      <div class="poster-header-text">
+        <div class="poster-vision" id="poster-vision">将来像</div>
+        <div class="poster-q-label" id="poster-q-label">—</div>
+        <div class="poster-q-text" id="poster-q-text">テーマを選ぶと問いが表示されます</div>
+        <div class="poster-team" id="poster-team"></div>
+      </div>
+    </div>
+    <div class="poster-body">
+      <div class="poster-section">
+        <div class="poster-section-label" id="lbl-h" style="color:#aaa">仮説 — なぜそうなっているのか</div>
+        <div class="poster-section-content empty" id="p-hypothesis">私たちは〜だと思う。</div>
+      </div>
+      <div class="poster-section">
+        <div class="poster-section-label" id="lbl-r" style="color:#aaa">見えてきた事実 — 5W2Hで気づいたこと</div>
+        <div class="poster-section-content empty" id="p-reason">なぜなら〜だからだ。</div>
+      </div>
+      <div class="poster-section">
+        <div class="poster-section-label" id="lbl-p" style="color:#aaa">仮提案 — どうすればいいか</div>
+        <div class="poster-section-content empty" id="p-proposal">だから〜すればいいんじゃないか。</div>
+      </div>
+    </div>
+    <div class="poster-footer-bar" id="poster-footer-bar" style="background:#ddd"></div>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  { qnum:"Q1 — エネルギー", vision:"将来像1 — 自然・歴史・伝統・文化を大切にする島", color:"#0D7A6E",
+    q:"沖縄の島々で再生可能エネルギーがなかなか広がらないのはなぜか。広めるには、何から手をつければいいだろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/VCStcXVraPCkqWBW.jpg" },
+  { qnum:"Q2 — 自然環境", vision:"将来像1 — 自然・歴史・伝統・文化を大切にする島", color:"#0D7A6E",
+    q:"沖縄の豊かな自然は、なぜ少しずつ失われているのか。次の世代に残すには、何から手をつければいいだろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/mxQYzuOEYZVkeXkf.webp" },
+  { qnum:"Q3 — 文化・歴史", vision:"将来像1 — 自然・歴史・伝統・文化を大切にする島", color:"#0D7A6E",
+    q:"首里城の再建に、若い世代はどう関わっていけばいいのか。次の世代に受け継ぐには、何が必要だろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/OcMWpsUFyLNFZrKr.jpg" },
+  { qnum:"Q4 — 文化・歴史", vision:"将来像1 — 自然・歴史・伝統・文化を大切にする島", color:"#0D7A6E",
+    q:"沖縄の伝統文化が若い世代になかなか伝わらないのはなぜか。伝えていくには、どんな方法があるだろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/eaqDdcPLjXolOPTK.webp" },
+  { qnum:"Q5 — 子どもの貧困", vision:"将来像2 — 心豊かで、安全・安心に暮らせる島", color:"#185FA5",
+    q:"沖縄の子どもの貧困率が高いままなのはなぜか。変えていくには、どこから手をつければいいだろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/gmtKuQIFeuvJMxUa.jpg" },
+  { qnum:"Q6 — 離島・医療", vision:"将来像2 — 心豊かで、安全・安心に暮らせる島", color:"#185FA5",
+    q:"離島で安心して医療を受けられる環境がなかなか整わないのはなぜか。整えるには、何が必要だろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/tKhITGpWgdtUIhXg.webp" },
+  { qnum:"Q7 — 基地・平和", vision:"将来像2 — 心豊かで、安全・安心に暮らせる島", color:"#185FA5",
+    q:"沖縄に全国の米軍専用施設の約7割が集中しているのはなぜか。その背景を知り、自分の言葉で語れるようになるには、何が必要だろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/QGyPKaaiaOHriXPB.jpg" },
+  { qnum:"Q8 — 観光・経済", vision:"将来像3 — 希望と活力にあふれる豊かな島", color:"#C05A10",
+    q:"観光客が増えているのに、なぜ暮らしへの恩恵が実感しにくいのか。みんなにとってよい観光のあり方にするには、何が必要だろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/lDdsusAbqlSmIzYj.jpg" },
+  { qnum:"Q9 — 産業・キャリア", vision:"将来像3 — 希望と活力にあふれる豊かな島", color:"#C05A10",
+    q:"沖縄で働く人の賃金が全国と比べて低いのはなぜか。変えていくには、何ができるだろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/gJnEkqPryLVPdxiq.jpg" },
+  { qnum:"Q10 — 起業・イノベーション", vision:"将来像3 — 希望と活力にあふれる豊かな島", color:"#C05A10",
+    q:"沖縄ならではのビジネスで長続きしているものとそうでないものは何が違うのか。成功させるには、何が必要だろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/nZccrYtWhErloJMZ.jpg" },
+  { qnum:"Q11 — 平和・歴史", vision:"将来像4 — 世界に開かれた交流と共生の島", color:"#7B2D5E",
+    q:"沖縄戦の記憶が次の世代に伝わりにくくなっているのはなぜか。伝えていくには、どんな方法があるだろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/xzNOIGDwofqlJMbl.jpg" },
+  { qnum:"Q12 — 多文化共生", vision:"将来像4 — 世界に開かれた交流と共生の島", color:"#7B2D5E",
+    q:"沖縄にルーツの違う人たちが暮らしているのに、お互いをよく知らない状況があるのはなぜか。つながりをつくるには、何ができるだろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/CUsKRVhpNEScbWVN.jpg" },
+  { qnum:"Q13 — 教育・格差", vision:"将来像5 — 多様な能力を発揮し、未来を拓く島", color:"#2D6A2D",
+    q:"沖縄の子どもたちの学力や進学率が全国と比べて差があるのはなぜか。縮めるには、何が必要だろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/zPITisjzLKKjmxlZ.jpg" },
+  { qnum:"Q14 — 人口・地域", vision:"将来像5 — 多様な能力を発揮し、未来を拓く島", color:"#2D6A2D",
+    q:"沖縄で育った若者が島を出ていきやすいのはなぜか。残りたいと思える場所にするには、何ができるだろう？",
+    image:"https://files.manuscdn.com/user_upload_by_module/session_file/310519663590508431/yOPvWYILlbJqNNPz.jpg" },
+];
+
+let currentColor = "#ddd";
+let currentQ = null;
+
+function onQSelect() {
+  const sel = document.getElementById('q-select');
+  const idx = sel.value;
+  if (idx === "") {
+    resetHeader();
+    return;
+  }
+  currentQ = QUESTIONS[+idx];
+  currentColor = currentQ.color;
+
+  document.getElementById('q-preview').textContent = currentQ.q;
+  document.getElementById('q-preview').style.borderLeftColor = currentColor;
+
+  document.getElementById('poster-vision').textContent = currentQ.vision;
+  document.getElementById('poster-q-label').textContent = currentQ.qnum;
+  document.getElementById('poster-q-text').textContent = currentQ.q;
+  document.getElementById('poster-header').style.background = currentColor;
+
+  const wrap = document.getElementById('poster-img-wrap');
+  const proxyUrl = "https://images.weserv.nl/?url=" + encodeURIComponent(currentQ.image.replace(/^https?:\/\//, ''));
+  wrap.innerHTML = `<img class="poster-img" src="${proxyUrl}" alt="" crossorigin="anonymous" onerror="this.src='${currentQ.image}'; this.removeAttribute('crossorigin');">`;
+
+  applyColor(currentColor);
+  updatePoster();
+}
+
+function resetHeader() {
+  currentColor = "#ddd";
+  currentQ = null;
+  document.getElementById('q-preview').textContent = "テーマを選ぶと問いが表示されます";
+  document.getElementById('q-preview').style.borderLeftColor = "#ddd";
+  document.getElementById('poster-vision').textContent = "将来像";
+  document.getElementById('poster-q-label').textContent = "—";
+  document.getElementById('poster-q-text').textContent = "テーマを選ぶと問いが表示されます";
+  document.getElementById('poster-header').style.background = "#ddd";
+  document.getElementById('poster-img-wrap').innerHTML = `<div class="poster-img-placeholder">テーマを選ぶと画像が表示されます</div>`;
+  applyColor("#ddd");
+}
+
+function applyColor(color) {
+  document.getElementById('poster-footer-bar').style.background = color;
+  document.getElementById('main-btn').style.background = color === "#ddd" ? "#999" : color;
+  ['lbl-h','lbl-r','lbl-p'].forEach(id => {
+    document.getElementById(id).style.color = color === "#ddd" ? "#aaa" : color;
+  });
+  document.querySelectorAll('.poster-section-content:not(.empty)').forEach(el => {
+    el.style.borderLeftColor = color;
+  });
+}
+
+function updatePoster() {
+  const h = document.getElementById('hypothesis').value;
+  const r = document.getElementById('reason').value;
+  const p = document.getElementById('proposal').value;
+  const t = document.getElementById('team').value;
+
+  document.getElementById('h-count').textContent = h.length;
+  document.getElementById('r-count').textContent = r.length;
+  document.getElementById('p-count').textContent = p.length;
+
+  setContent('p-hypothesis', h, '私たちは〜だと思う。');
+  setContent('p-reason', r, 'なぜなら〜だからだ。');
+  setContent('p-proposal', p, 'だから〜すればいいんじゃないか。');
+
+  const teamEl = document.getElementById('poster-team');
+  teamEl.textContent = t ? `チーム：${t}` : '';
+
+  applyColor(currentColor);
+}
+
+function setContent(id, val, placeholder) {
+  const el = document.getElementById(id);
+  if (val.trim()) {
+    el.textContent = val;
+    el.classList.remove('empty');
+    el.style.borderLeftColor = currentColor;
+
+    const len = val.length;
+    if (len > 250) {
+      el.style.fontSize = '9px';
+      el.style.lineHeight = '1.4';
+    } else if (len > 200) {
+      el.style.fontSize = '10px';
+      el.style.lineHeight = '1.5';
+    } else if (len > 150) {
+      el.style.fontSize = '10.5px';
+      el.style.lineHeight = '1.6';
+    } else if (len > 100) {
+      el.style.fontSize = '11px';
+      el.style.lineHeight = '1.65';
+    } else {
+      el.style.fontSize = '';
+      el.style.lineHeight = '';
+    }
+  } else {
+    el.textContent = placeholder;
+    el.classList.add('empty');
+    el.style.borderLeftColor = '#e0dbd4';
+    el.style.fontSize = '';
+    el.style.lineHeight = '';
+  }
+}
+
+async function getPosterCanvas() {
+  const target = document.getElementById('poster');
+  return html2canvas(target, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#ffffff',
+    width: 400,
+    onclone: (clonedDoc) => {
+      const clonedPoster = clonedDoc.getElementById('poster');
+      clonedPoster.style.width = '400px';
+      clonedPoster.style.minWidth = '400px';
+      clonedPoster.style.maxWidth = '400px';
+      clonedPoster.style.height = 'auto';
+      clonedPoster.style.position = 'relative';
+      clonedPoster.style.transform = 'none';
+      clonedPoster.style.display = 'flex';
+      clonedPoster.style.flexDirection = 'column';
+    }
+  });
+}
+
+function savePoster() {
+  getPosterCanvas().then(canvas => {
+    const link = document.createElement('a');
+    link.download = '探究ポスター.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }).catch((err) => {
+    console.error(err);
+    alert('保存に失敗しました。「新しいタブで開く」ボタンをお試しください。');
+  });
+}
+
+function openPoster() {
+  getPosterCanvas().then(canvas => {
+    const dataUrl = canvas.toDataURL('image/png');
+    const win = window.open();
+    if (win) {
+      win.document.write(`
+        <html>
+          <head>
+            <title>ポスタープレビュー</title>
+            <style>
+              body { margin: 0; background: #555; display: flex; justify-content: center; align-items: flex-start; padding: 20px; min-height: 100vh; }
+              img { box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 100%; height: auto; }
+            </style>
+          </head>
+          <body>
+            <img src="${dataUrl}" />
+          </body>
+        </html>
+      `);
+      win.document.close();
+    }
+  }).catch((err) => {
+    console.error(err);
+    alert('表示に失敗しました。');
+  });
+}
+</script>
+</body>
+</html>
