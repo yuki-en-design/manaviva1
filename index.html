@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>まなVIVA 教材ひろば</title>
+<style>
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;background:#f4f8fb;color:#1f2d3a}
+  header{background:#0e6ba8;color:#fff;padding:28px 16px;text-align:center}
+  header h1{margin:0;font-size:1.6rem}
+  header p{margin:8px 0 0;font-size:.95rem;opacity:.9}
+  main{max-width:880px;margin:0 auto;padding:20px 16px 40px}
+  h2{font-size:1.1rem;border-left:6px solid #0e6ba8;padding-left:10px;margin:28px 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  a.card{display:block;background:#fff;border-radius:12px;padding:16px;text-decoration:none;color:inherit;box-shadow:0 2px 6px rgba(0,0,0,.08);transition:transform .15s}
+  a.card:hover{transform:translateY(-3px)}
+  .card .t{font-weight:bold;font-size:1.05rem;color:#0e6ba8}
+  .card .d{font-size:.88rem;margin-top:6px;line-height:1.5}
+  footer{text-align:center;font-size:.8rem;color:#6b7a88;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <h1>まなVIVA 教材ひろば</h1>
+  <p>興南中学校・高等学校 総合的な探究の時間</p>
+</header>
+<main id="list"></main>
+<footer>まなVIVA</footer>
+
+<script>
+// ===== 教材を増やすときは、ここに1行ずつ足すだけ =====
+// 分類, 名前, 説明, 場所（フォルダ名/）
+const items = [
+  ["問いをつくる", "問いさがしアプリ", "気になるキーワードから、自分に合った探究の問いを見つける。", "toi/"],
+  ["問いをつくる", "探究カード", "沖縄の課題カードをめくって、テーマのたねを探す。", "card/"],
+  ["問いをつくる", "探究カード＋マトリクス", "カードを「やりたい度×イメージしやすさ」に並べて、テーマをしぼる。", "matrix/"],
+  ["問いをつくる", "問いを広げるワーク", "テーマを選んで、いつ・どこ・だれなどの観点で問いを広げる。", "hirogeru/"],
+  ["まとめる", "仮説ポスターメーカー", "問い・仮説・根拠を入れて、ポスターを画像で保存する。", "poster/"],
+  ["チームづくり・ふりかえり", "さいころトーク", "12面サイコロをふって出たお題で話す。チーム発足のときに。", "saikoro/"],
+  ["チームづくり・ふりかえり", "チームロゴメーカー", "形・モチーフ・色を選んでチームのロゴをつくる。", "logo/"],
+  ["チームづくり・ふりかえり", "振り返り大賞ルーレット", "ルーレットを回して、表彰するメンバーをみんなで決める。", "roulette/"],
+];
+// =====================================================
+
+const main = document.getElementById("list");
+const groups = {};
+items.forEach(i => (groups[i[0]] = groups[i[0]] || []).push(i));
+for (const g in groups) {
+  const h = document.createElement("h2"); h.textContent = g; main.appendChild(h);
+  const grid = document.createElement("div"); grid.className = "grid";
+  groups[g].forEach(([, name, desc, url]) => {
+    const a = document.createElement("a"); a.className = "card"; a.href = url;
+    a.innerHTML = '<div class="t">' + name + '</div><div class="d">' + desc + '</div>';
+    grid.appendChild(a);
+  });
+  main.appendChild(grid);
+}
+</script>
+</body>
+</html>
