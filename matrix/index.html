@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沖縄 探究カード × マトリクス</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #eef2f6;
+  --muted: #6b7280;
+  --border-light: #e5e7eb;
+}
+html, body {
+  height: 100%;
+  font-family: 'Noto Sans JP', 'Hiragino Sans', sans-serif;
+  background: var(--bg);
+  color: #1e293b;
+  overflow: hidden;
+}
+.app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+/* card panel (left) */
+.card-panel {
+  width: 380px;
+  background: #f8fafc;
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 15px;
+  position: relative;
+  flex-shrink: 0;
+}
+.progress-bar {
+  width: 100%; max-width: 320px;
+  height: 6px; background: #e2e8f0;
+  border-radius: 3px; margin-bottom: 8px;
+}
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.counter {
+  color: #64748b; font-size: 11px; font-weight: 700;
+  margin-bottom: 15px; width: 100%; max-width: 320px;
+}
+.stage {
+  width: 100%; max-width: 330px;
+  position: relative; height: 500px;
+  margin-bottom: 10px;
+}
+.card {
+  position: absolute; width: 100%;
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  cursor: grab; top: 0; left: 0;
+  background: #fff; user-select: none;
+  touch-action: none;
+}
+.card:active { cursor: grabbing; }
+.card.animating { transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease; }
+.card.behind { transform: scale(0.94) translateY(12px); z-index: 5; opacity: 0.5; pointer-events: none; }
+.card.front { z-index: 20; }
+.card-header { padding: 16px 18px 12px; }
+.vision-badge {
+  display: inline-block; background: rgba(255,255,255,0.2);
+  color: #fff; font-size: 8px; font-weight: 700;
+  padding: 2px 8px; border-radius: 10px; margin-bottom: 6px;
+}
+.q-num { font-size: 9px; color: rgba(255,255,255,0.85); font-weight: 700; margin-bottom: 2px; }
+.q-text { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.35; }
+.card-body { padding: 12px 15px; }
+.img-box {
+  width: 100%; height: 110px; border-radius: 10px;
+  overflow: hidden; margin-bottom: 10px; background: #f1f5f9;
+}
+.img-box img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.img-box { position: relative; }
+.credit { position: absolute; right: 4px; bottom: 2px; font-size: 7px; color: rgba(255,255,255,0.8); text-shadow: 0 0 2px rgba(0,0,0,0.7); text-decoration: none; }
+.section-label { font-size: 8px; font-weight: 800; color: #94a3b8; margin-bottom: 5px; letter-spacing: 0.05em; }
+.keywords { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.kw {
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 5px; padding: 3px 8px; font-size: 10px; font-weight: 600;
+}
+.divider { border-top: 1px solid #f1f5f9; margin-bottom: 12px; }
+.think-box { border-radius: 10px; padding: 12px; font-size: 11px; line-height: 1.6; }
+.think-label { font-size: 9px; font-weight: 800; margin-bottom: 4px; }
+.drag-hint { font-size: 10px; color: #94a3b8; margin: 10px 0; font-weight: 600; }
+.nav { display: flex; gap: 25px; margin-top: 5px; }
+.nav-btn {
+  background: #fff; border: 1px solid #e2e8f0;
+  color: #475569; border-radius: 50%;
+  width: 48px; height: 48px; font-size: 20px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: all 0.2s;
+}
+.nav-btn:active { transform: scale(0.9); background: #f8fafc; }
+.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* matrix panel (right) */
+.matrix-panel {
+  flex-grow: 1; display: flex; flex-direction: column;
+  padding: 20px; gap: 15px;
+}
+.matrix-topbar { display: flex; justify-content: space-between; align-items: flex-end; }
+.matrix-title { font-size: 18px; font-weight: 900; color: #0f172a; }
+.matrix-sub { font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px; }
+.reset-btn {
+  padding: 6px 14px; font-size: 11px; font-weight: 700;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  color: #ef4444; cursor: pointer; transition: all 0.2s;
+}
+.reset-btn:hover { background: #fef2f2; border-color: #fecaca; }
+.matrix-body { display: flex; flex-grow: 1; gap: 20px; }
+.matrix-outer {
+  flex-grow: 1; background: #fff; border-radius: 20px;
+  border: 1px solid var(--border-light); position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+.matrix-plot {
+  position: absolute; top: 30px; left: 60px; right: 30px; bottom: 40px;
+  overflow: visible;
+}
+.grid-h { position: absolute; top: 50%; left: 0; right: 0; border-top: 2px dashed #e2e8f0; }
+.grid-v { position: absolute; left: 50%; top: 0; bottom: 0; border-left: 2px dashed #e2e8f0; }
+.q-lbl { position: absolute; font-size: 10px; font-weight: 700; color: #94a3b8; line-height: 1.3; pointer-events: none; }
+.q-lbl.tl { top:8px; left:10px; }
+.q-lbl.tr { top:8px; right:10px; text-align:right; }
+.q-lbl.bl { bottom:8px; left:10px; }
+.q-lbl.br { bottom:8px; right:10px; text-align:right; }
+.ax {
+  position: absolute; font-size: 9px; font-weight: 600;
+  color: #64748b; white-space: nowrap; pointer-events: none;
+}
+.ax.y-top { top: 0; left: 0; width: 54px; text-align: right; }
+.ax.y-mid { top: 50%; left: 46px; transform: translateY(-50%); writing-mode: vertical-rl; font-size: 10px; font-weight: 800; color: #334155; letter-spacing: 0.1em; }
+.ax.y-bot { bottom: 24px; left: 0; width: 54px; text-align: right; }
+.ax.x-left { bottom: 4px; left: 60px; }
+.ax.x-mid { bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 800; color: #334155; }
+.ax.x-right { bottom: 4px; right: 0; }
+/* matrix chip */
+.m-card {
+  position: absolute; transform: translate(-50%,-50%);
+  width: 62px; min-height: 44px; border-radius: 8px; border: 2px solid;
+  font-size: 8px; line-height: 1.3; padding: 4px 5px; text-align: center;
+  cursor: grab; touch-action: none; word-break: break-all; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  transition: box-shadow 0.15s, transform 0.1s; background: #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+.m-card:hover { z-index:20; transform: translate(-50%,-50%) scale(1.1); }
+.m-card.r1 { box-shadow: 0 0 0 2.5px #ffd700, 0 4px 14px rgba(255,215,0,0.4); z-index:15; }
+.m-card.r2 { box-shadow: 0 0 0 2.5px #c0c0c0, 0 4px 14px rgba(192,192,192,0.4); z-index:14; }
+.m-card.r3 { box-shadow: 0 0 0 2.5px #cd7f32, 0 4px 14px rgba(205,127,50,0.4); z-index:13; }
+/* result sidebar */
+.result-col { width: 180px; flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; }
+.sidebar-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.result-box { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+.result-item { display: flex; align-items: flex-start; gap: 7px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 11px; line-height: 1.4; }
+.result-item:last-child { border-bottom:none; }
+.result-medal { font-size:15px; flex-shrink:0; }
+.result-empty { font-size:10px; color:#94a3b8; padding:6px 0; }
+#ghost { display: none !important; }
+</style>
+</head>
+<body>
+<div id="ghost"></div>
+<div class="app">
+  <div class="card-panel">
+    <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+    <div class="counter" id="counter"></div>
+    <div class="stage" id="stage"></div>
+    <div class="drag-hint">↔ カードを右へドラッグ → マトリクスに配置</div>
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" onclick="go(-1)">←</button>
+      <button class="nav-btn" id="nextBtn" onclick="go(1)">→</button>
+    </div>
+  </div>
+  <div class="matrix-panel">
+    <div class="matrix-topbar">
+      <div>
+        <div class="matrix-title">探究テーマ マトリクス</div>
+        <div class="matrix-sub">右上ほど「やりたい × イメージしやすい」　ダブルクリックで削除</div>
+      </div>
+      <button class="reset-btn" onclick="resetMatrix()">リセット</button>
+    </div>
+    <div class="matrix-body">
+      <div class="matrix-outer">
+        <div class="matrix-plot" id="plot">
+          <div class="grid-h"></div>
+          <div class="grid-v"></div>
+          <div class="q-lbl tl">やりたい<br>難しそう</div>
+          <div class="q-lbl tr">やりたい<br>イメージできる</div>
+          <div class="q-lbl bl">どちらとも…</div>
+          <div class="q-lbl br">解決策は<br>見えてる…</div>
+        </div>
+        <span class="ax y-top">やってみたい ↑</span>
+        <span class="ax y-mid">やってみたい度</span>
+        <span class="ax y-bot">↓ あまり…</span>
+        <span class="ax x-left">← 想像しにくい</span>
+        <span class="ax x-mid">解決策が想像できる度</span>
+        <span class="ax x-right">想像しやすい →</span>
+      </div>
+      <div class="result-col">
+        <div class="sidebar-label">トップ3</div>
+        <div class="result-box" id="result-list">
+          <div class="result-empty">カードを配置すると表示されます</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const CARDS = [
+  {
+    vision: "将来像1 — 自然・歴史・伝統・文化を大切にする島", color: "#0D7A6E",
+    qnum: "Q1 — エネルギー",
+    q: "沖縄の島々で再生可能エネルギーがなかなか広がらないのはなぜか。広めるには、何から手をつければいいだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Yoshinoura_Thermal-power-plant.jpg?width=800",
+    keywords: ["再生可能エネルギー","太陽光発電","風力発電","エネルギー自給","電力コスト","化石燃料","送電網","離島"],
+    think: "沖縄の島々は本土の電力網とつながっていない。電気はどうやって作られていて、なぜ再生可能エネルギーへの切り替えが難しいんだろう？",
+    thinkBg: "#E8F5F0", thinkBorder: "#0D7A6E", thinkText: "#084D44", thinkLabel: "#0D7A6E", kwColor: "#0D7A6E", kwBorder: "#9FE1CB",
+    short: "再生可能エネルギーを\n広めるには？", chipBg: "#d4f0e8"
+  },
+  {
+    vision: "将来像1 — 自然・歴史・伝統・文化を大切にする島", color: "#0D7A6E",
+    qnum: "Q2 — 自然環境",
+    q: "沖縄の豊かな自然は、なぜ少しずつ失われているのか？次の世代に残すには、何から手をつければいいだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Kerama_Island_-_6081216280.jpg?width=800",
+    keywords: ["サンゴ礁","やんばる","生物多様性","自然保護","環境破壊","気候変動","エコツーリズム","ブルーエコノミー"],
+    think: "沖縄の海や森では、今どんな変化が起きているんだろう？何がその原因になっていて、どうすれば守れるんだろう？",
+    thinkBg: "#E8F5F0", thinkBorder: "#0D7A6E", thinkText: "#084D44", thinkLabel: "#0D7A6E", kwColor: "#0D7A6E", kwBorder: "#9FE1CB",
+    short: "自然を次の世代に\n残すには？", chipBg: "#d4f0e8"
+  },
+  {
+    vision: "将来像1 — 自然・歴史・伝統・文化を大切にする島", color: "#0D7A6E",
+    qnum: "Q3 — 文化・歴史",
+    q: "首里城の再建に、若い世代はどう関わっていけばいいのか。次の世代に受け継ぐには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Shuri_Castle_under_reconstruction_on_23_December_2025.jpg?width=800",
+    keywords: ["首里城","復元","琉球王国","伝統技術","文化財","若者参加","クラウドファンディング","まちづくり"],
+    think: "2019年の火災で焼失した首里城。再建にはどんな人たちが関わっていて、どんな判断が求められているんだろう？",
+    thinkBg: "#E8F5F0", thinkBorder: "#0D7A6E", thinkText: "#084D44", thinkLabel: "#0D7A6E", kwColor: "#0D7A6E", kwBorder: "#9FE1CB",
+    short: "首里城再建に\n若者が関わるには？", chipBg: "#d4f0e8"
+  },
+  {
+    vision: "将来像1 — 自然・歴史・伝統・文化を大切にする島", color: "#0D7A6E",
+    qnum: "Q4 — 伝統文化",
+    q: "沖縄の伝統文化が若い世代になかなか伝わらないのはなぜか。伝えていくには、どんな方法があるだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/An_eisa_folk_dancing_troupe_performs_at_the_2010_Okinawa_International_Carnival_Nov_101127-F-HZ730-008.jpg?width=800",
+    keywords: ["エイサー","三線","紅型","琉球舞踊","うちなーぐち","組踊","伝統工芸","無形文化遺産"],
+    think: "沖縄にはどんな文化があって、誰がどんなふうに受け継いでいるんだろう？何が伝わりにくくさせているんだろう？",
+    thinkBg: "#E8F5F0", thinkBorder: "#0D7A6E", thinkText: "#084D44", thinkLabel: "#0D7A6E", kwColor: "#0D7A6E", kwBorder: "#9FE1CB",
+    short: "伝統文化を若い世代に\n伝えるには？", chipBg: "#d4f0e8"
+  },
+  {
+    vision: "将来像2 — 心豊かで、安全・安心に暮らせる島", color: "#185FA5",
+    qnum: "Q5 — 子どもの貧困",
+    q: "沖縄の子どもの貧困率が高いままなのはなぜか。変えていくには、どこから手をつければいいだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/%E6%84%9B%E7%9F%A5%E7%9C%8C%E5%8D%8A%E7%94%B0%E5%B8%82_2018%E5%B9%B44%E6%9C%8818%E6%97%A5%E3%81%AE%E7%B5%A6%E9%A3%9F.jpeg?width=800",
+    keywords: ["子どもの貧困","貧困率","子ども食堂","奨学金","就学援助","ひとり親","格差","セーフティネット"],
+    think: "「子どもの貧困」とは具体的にどんな状態のことをいうんだろう？なぜ沖縄では全国と比べて高い水準が続いているんだろう？",
+    thinkBg: "#E6F1FB", thinkBorder: "#185FA5", thinkText: "#0A3A6B", thinkLabel: "#185FA5", kwColor: "#185FA5", kwBorder: "#B5D4F4",
+    short: "子どもの貧困を\n変えていくには？", chipBg: "#c8ddf5"
+  },
+  {
+    vision: "将来像2 — 心豊かで、安全・安心に暮らせる島", color: "#185FA5",
+    qnum: "Q6 — 離島・医療",
+    q: "離島で安心して医療を受けられる環境がなかなか整わないのはなぜか。整えるには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Ishigaki_YKF_niinufabushi.jpg?width=800",
+    keywords: ["離島医療","救急搬送","ドクターヘリ","無医地区","遠隔診療","医師不足","インフラ","生活コスト"],
+    think: "離島で急に病気になったら、何が起きるんだろう？本島との違いはどこにあって、何がそれを生み出しているんだろう？",
+    thinkBg: "#E6F1FB", thinkBorder: "#185FA5", thinkText: "#0A3A6B", thinkLabel: "#185FA5", kwColor: "#185FA5", kwBorder: "#B5D4F4",
+    short: "離島の医療環境を\n整えるには？", chipBg: "#c8ddf5"
+  },
+  {
+    vision: "将来像2 — 心豊かで、安全・安心に暮らせる島", color: "#185FA5",
+    qnum: "Q7 — 基地・平和",
+    q: "沖縄に全国の米軍専用施設の約7割が集中しているのはなぜか。その背景を知り、自分の言葉で語れるようになるには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Marine_Corps_Air_Station_Futenma_20100526.jpg?width=800",
+    keywords: ["米軍基地","日米地位協定","沖縄戦後史","基地負担","騒音","軍用地料","普天間","辺野古"],
+    think: "なぜ沖縄にこれほど多くの基地が集中しているんだろう？歴史的な経緯と、今の暮らしへの影響を知ることから始めてみよう。",
+    thinkBg: "#E6F1FB", thinkBorder: "#185FA5", thinkText: "#0A3A6B", thinkLabel: "#185FA5", kwColor: "#185FA5", kwBorder: "#B5D4F4",
+    short: "基地集中について\n語るには？", chipBg: "#c8ddf5"
+  },
+  {
+    vision: "将来像3 — 希望と活力にあふれる豊かな島", color: "#C05A10",
+    qnum: "Q8 — 観光・経済",
+    q: "観光客が増えているのに、なぜ暮らしへの恩恵が実感しにくいのか。みんなにとってよい観光のあり方にするには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/202408_%E6%B2%96%E7%B9%A9%E7%B8%A3%E9%82%A3%E9%9C%B8%E5%B8%82%E7%9A%84%E9%82%A3%E9%9C%B8%E5%9C%8B%E9%9A%9B%E9%80%9A%E7%9A%84%E8%A1%97%E6%99%AF.jpg?width=800",
+    keywords: ["観光収入","オーバーツーリズム","観光公害","消費構造","宿泊業","土産品","持続可能な観光","外資"],
+    think: "観光客が増えることで、誰がどんな恩恵を受けていて、誰がどんな影響を受けているんだろう？お金の流れはどうなっている？",
+    thinkBg: "#FFF3E6", thinkBorder: "#E07B39", thinkText: "#5a3010", thinkLabel: "#C05A10", kwColor: "#C05A10", kwBorder: "#F5C98A",
+    short: "よい観光のあり方に\nするには？", chipBg: "#fde4c2"
+  },
+  {
+    vision: "将来像3 — 希望と活力にあふれる豊かな島", color: "#C05A10",
+    qnum: "Q9 — 産業・キャリア",
+    q: "沖縄で働く人の賃金が全国と比べて低いままなのはなぜか。変えていくには、何ができるだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Naha1.jpg?width=800",
+    keywords: ["平均賃金","非正規雇用","最低賃金","労働環境","正規雇用","産業構造","職業訓練","働き方"],
+    think: "沖縄の賃金はなぜ全国最低水準が続いているんだろう？どんな働き方が多くて、何が賃金を左右しているんだろう？",
+    thinkBg: "#FFF3E6", thinkBorder: "#E07B39", thinkText: "#5a3010", thinkLabel: "#C05A10", kwColor: "#C05A10", kwBorder: "#F5C98A",
+    short: "低い賃金を\n変えていくには？", chipBg: "#fde4c2"
+  },
+  {
+    vision: "将来像3 — 希望と活力にあふれる豊かな島", color: "#C05A10",
+    qnum: "Q10 — 起業・イノベーション",
+    q: "沖縄ならではのビジネスで長続きしているものとそうでないものは何が違うのか。成功させるには、何が必要だろう？",
+    image: "https://d1ldvf68ux039x.cloudfront.net/thumbs/photos/1707/3623192/1000w_q95.jpg",
+    keywords: ["販路","輸送コスト","ブランド化","後継者","資金調達","市場規模","差別化","島外展開"],
+    think: "沖縄ならではの農業・漁業・新しいビジネス……長続きしているものとそうでないものは、何が違うんだろう？",
+    thinkBg: "#FFF3E6", thinkBorder: "#E07B39", thinkText: "#5a3010", thinkLabel: "#C05A10", kwColor: "#C05A10", kwBorder: "#F5C98A",
+    short: "ビジネスを\n成功させるには？", chipBg: "#fde4c2"
+  },
+  {
+    vision: "将来像4 — 世界に開かれた交流と共生の島", color: "#7B2D5E",
+    qnum: "Q11 — 平和・歴史",
+    q: "沖縄戦の記憶が次の世代に伝わりにくくなっているのはなぜか。伝えていくには、どんな方法があるだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Okinawa_Cornerstone-of-Peace.jpg?width=800",
+    keywords: ["沖縄戦","慰霊の日","体験者","平和教育","デジタルアーカイブ","戦跡","ひめゆり","語り継ぎ"],
+    think: "体験者が少なくなっていく中で、沖縄戦の記憶はどうやって残されているんだろう？何が「伝わる」ことを難しくしているんだろう？",
+    thinkBg: "#FBEAF0", thinkBorder: "#993C6E", thinkText: "#4B1528", thinkLabel: "#7B2D5E", kwColor: "#7B2D5E", kwBorder: "#F4C0D1",
+    short: "沖縄戦の記憶を\n伝えていくには？", chipBg: "#f5c8de"
+  },
+  {
+    vision: "将来像4 — 世界に開かれた交流と共生の島", color: "#7B2D5E",
+    qnum: "Q12 — 多文化共生",
+    q: "沖縄にルーツの違う人たちが暮らしているのに、お互いをよく知らない状況があるのはなぜか。つながりをつくるには、何ができるだろう？",
+    image: "https://d1ldvf68ux039x.cloudfront.net/thumbs/photos/2602/9535648/1000w_q95.jpg",
+    imgPos: "center 30%",
+    keywords: ["ウチナーンチュ","外国人住民","アメラジアン","移住者","多文化","言語の壁","ネットワーク","国際交流"],
+    think: "沖縄にはどんなルーツを持つ人たちがいるんだろう？お互いをよく知らない状況が生まれているのはなぜだろう？",
+    thinkBg: "#FBEAF0", thinkBorder: "#993C6E", thinkText: "#4B1528", thinkLabel: "#7B2D5E", kwColor: "#7B2D5E", kwBorder: "#F4C0D1",
+    short: "違うルーツの人と\nつながるには？", chipBg: "#f5c8de"
+  },
+  {
+    vision: "将来像5 — 多様な能力を発揮し、未来を拓く島", color: "#2D6A2D",
+    qnum: "Q13 — 教育・格差",
+    q: "沖縄の子どもたちの学力や進学率が全国と比べて差があるのはなぜか。縮めるには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/JapaneseBackpack.jpg?width=800",
+    keywords: ["学力","進学率","全国学力調査","離島教育","塾格差","奨学金","GIGAスクール","教員不足"],
+    think: "沖縄の子どもたちの学びの環境は、全国と比べてどんな違いがあるんだろう？何がその差を生み出しているんだろう？",
+    thinkBg: "#EAF3DE", thinkBorder: "#3D7A3A", thinkText: "#173404", thinkLabel: "#2D6A2D", kwColor: "#2D6A2D", kwBorder: "#C0DD97",
+    short: "学力や進学率の差を\n縮めるには？", chipBg: "#c8e6b4"
+  },
+  {
+    vision: "将来像5 — 多様な能力を発揮し、未来を拓く島", color: "#2D6A2D",
+    qnum: "Q14 — 人口・地域",
+    q: "沖縄で育った若者が島を出ていきやすいのはなぜか。残りたいと思える場所にするには、何ができるだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Tokyo_Shibuya_Scramble_Crossing_2018-10-09.jpg?width=800",
+    keywords: ["人口流出","若者","県外進学","Uターン","賃金格差","定住促進","関係人口","地域おこし"],
+    think: "沖縄で育った若者は、その後どこへ行って何をしているんだろう？島を出る理由と、残る理由、それぞれ何があるんだろう？",
+    thinkBg: "#EAF3DE", thinkBorder: "#3D7A3A", thinkText: "#173404", thinkLabel: "#2D6A2D", kwColor: "#2D6A2D", kwBorder: "#C0DD97",
+    short: "若者が残りたいと\n思える島にするには？", chipBg: "#c8e6b4"
+  }
+];
+
+const CREDITS = [
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Yoshinoura_Thermal-power-plant.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Kerama_Island_-_6081216280.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Shuri_Castle_under_reconstruction_on_23_December_2025.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:An_eisa_folk_dancing_troupe_performs_at_the_2010_Okinawa_International_Carnival_Nov_101127-F-HZ730-008.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:%E6%84%9B%E7%9F%A5%E7%9C%8C%E5%8D%8A%E7%94%B0%E5%B8%82_2018%E5%B9%B44%E6%9C%8818%E6%97%A5%E3%81%AE%E7%B5%A6%E9%A3%9F.jpeg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Ishigaki_YKF_niinufabushi.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Marine_Corps_Air_Station_Futenma_20100526.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:202408_%E6%B2%96%E7%B9%A9%E7%B8%A3%E9%82%A3%E9%9C%B8%E5%B8%82%E7%9A%84%E9%82%A3%E9%9C%B8%E5%9C%8B%E9%9A%9B%E9%80%9A%E7%9A%84%E8%A1%97%E6%99%AF.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Naha1.jpg" },
+  { t: "写真：U.S. Marine Corps / Lance Cpl. Bernadette Wildes", u: "https://www.dvidshub.net/image/3623192/mango-mike-marine-veteran-plants-roots-okinawa" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Okinawa_Cornerstone-of-Peace.jpg" },
+  { t: "写真：U.S. Air Force / Staff Sgt. Gary Hilton", u: "https://www.dvidshub.net/image/9535648/drumbeats-and-friendship-kadena-chatan-students-unite-through-okinawan-culture" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:JapaneseBackpack.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Tokyo_Shibuya_Scramble_Crossing_2018-10-09.jpg" },
+];
+
+let currentAvailableIndex = 0;
+let swipeStartX = 0, swipeStartY = 0, isDraggingCard = false, swipeEl = null;
+let isAnimatingCard = false;
+const positions = {}; // {cardId: {x, y}}
+
+function getAvailableCards() {
+  return CARDS.map((c, i) => i).filter(i => !positions.hasOwnProperty(i));
+}
+
+function render() {
+  const available = getAvailableCards();
+  const stage = document.getElementById('stage');
+  stage.innerHTML = '';
+  
+  if (available.length === 0) {
+    stage.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:12px;font-weight:700;text-align:center">全てのカードを配置しました！<br><br>マトリクスのチップをダブルクリックすると<br>ここに戻せます</div>';
+    document.getElementById('counter').textContent = '完了';
+    document.getElementById('prog').style.width = '100%';
+    document.getElementById('prevBtn').disabled = true;
+    document.getElementById('nextBtn').disabled = true;
+    return;
+  }
+
+  currentAvailableIndex = Math.max(0, Math.min(currentAvailableIndex, available.length - 1));
+  const cardId = available[currentAvailableIndex];
+
+  if (currentAvailableIndex + 1 < available.length) {
+    const nextId = available[currentAvailableIndex + 1];
+    const behind = makeCard(nextId);
+    behind.classList.add('behind');
+    stage.appendChild(behind);
+  }
+  
+  const front = makeCard(cardId);
+  front.classList.add('front');
+  front.dataset.cardId = cardId;
+  stage.appendChild(front);
+  setupSwipe(front);
+
+  const prog = document.getElementById('prog');
+  prog.style.width = ((CARDS.length - available.length + 1) / CARDS.length * 100) + '%';
+  prog.style.background = CARDS[cardId].color;
+  document.getElementById('counter').textContent = `未配置: ${available.length} 枚`;
+  document.getElementById('prevBtn').disabled = currentAvailableIndex === 0;
+  document.getElementById('nextBtn').disabled = currentAvailableIndex === available.length - 1;
+}
+
+function makeCard(i) {
+  const c = CARDS[i];
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.innerHTML = `
+    <div class="card-header" style="background:${c.color}">
+      <div class="vision-badge">${c.vision}</div>
+      <div class="q-num">${c.qnum}</div>
+      <div class="q-text">${c.q}</div>
+    </div>
+    <div class="card-body">
+      <div class="img-box"><img src="${c.image}" alt="img" style="object-position:${c.imgPos || 'center'}" onerror="this.parentElement.style.background='#ccc';this.style.display='none'"><a class="credit" href="${CREDITS[i].u}" target="_blank" rel="noopener">${CREDITS[i].t}</a></div>
+      <div class="section-label">キーワード</div>
+      <div class="keywords">
+        ${c.keywords.map(k => `<span class="kw" style="color:${c.kwColor};border-color:${c.kwBorder}">${k}</span>`).join('')}
+      </div>
+      <div class="divider"></div>
+      <div class="think-box" style="background:${c.thinkBg};border:1px dashed ${c.thinkBorder}">
+        <div class="think-label" style="color:${c.thinkLabel}">💡 考えてみよう</div>
+        <span style="color:${c.thinkText}">${c.think}</span>
+      </div>
+    </div>
+  `;
+  return el;
+}
+
+function setupSwipe(card) {
+  const onDown = e => {
+    if (isAnimatingCard) return;
+    const t = e.touches ? e.touches[0] : e;
+    swipeStartX = t.clientX;
+    swipeStartY = t.clientY;
+    isDraggingCard = true;
+    swipeEl = card;
+  };
+  card.addEventListener('mousedown', onDown);
+  card.addEventListener('touchstart', onDown, {passive:true});
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, {passive:false});
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchend', onEnd);
+}
+
+function onMove(e) {
+  if (!isDraggingCard || !swipeEl) return;
+  const t = e.touches ? e.touches[0] : e;
+  const dx = t.clientX - swipeStartX;
+  const dy = t.clientY - swipeStartY;
+  swipeEl.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx * 0.04}deg)`;
+  if (e.cancelable) e.preventDefault();
+}
+
+function onEnd(e) {
+  if (!isDraggingCard || !swipeEl) return;
+  isDraggingCard = false;
+  const t = e.changedTouches ? e.changedTouches[0] : e;
+  const cx = t.clientX;
+  const cy = t.clientY;
+  const plot = document.getElementById('plot');
+  const plotRect = plot.getBoundingClientRect();
+
+  if (cx > plotRect.left && cx < plotRect.right && cy > plotRect.top && cy < plotRect.bottom) {
+    const x = Math.min(95, Math.max(5, (cx - plotRect.left) / plotRect.width * 100)).toFixed(1);
+    const y = Math.min(95, Math.max(5, (cy - plotRect.top) / plotRect.height * 100)).toFixed(1);
+    const cardId = parseInt(swipeEl.dataset.cardId);
+    positions[cardId] = {x, y};
+    buildMatrixCards();
+    updateResult();
+    
+    isAnimatingCard = true;
+    swipeEl.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    swipeEl.style.transform = `translate(${cx - swipeStartX}px, ${cy - swipeStartY}px) scale(0.1)`;
+    swipeEl.style.opacity = '0';
+    
+    setTimeout(() => {
+      isAnimatingCard = false;
+      render(); 
+    }, 300);
+  } else {
+    swipeEl.classList.add('animating');
+    swipeEl.style.transform = '';
+    swipeEl.style.opacity = '1';
+    setTimeout(() => swipeEl && swipeEl.classList.remove('animating'), 400);
+  }
+  swipeEl = null;
+}
+
+function flyOut(el, dir) {
+  if (isAnimatingCard) return;
+  const available = getAvailableCards();
+  const nextIndex = dir === -1 ? currentAvailableIndex + 1 : currentAvailableIndex - 1;
+  if (nextIndex < 0 || nextIndex >= available.length) return;
+  isAnimatingCard = true;
+  el.classList.add('animating');
+  el.style.transform = `translateX(${dir * 160}%) rotate(${dir * 16}deg)`;
+  el.style.opacity = '0';
+  setTimeout(() => {
+    currentAvailableIndex = nextIndex;
+    render();
+    isAnimatingCard = false;
+  }, 420);
+}
+
+function go(dir) {
+  if (isAnimatingCard) return;
+  const front = document.querySelector('.card.front');
+  if (front) flyOut(front, dir === 1 ? -1 : 1);
+}
+
+function buildMatrixCards() {
+  const plot = document.getElementById('plot');
+  plot.querySelectorAll('.m-card').forEach(e => e.remove());
+  const top3 = getTop3();
+  const medals = ['🥇','🥈','🥉'];
+  Object.entries(positions).forEach(([id, pos]) => {
+    const i = +id;
+    const c = CARDS[i];
+    const rank = top3.indexOf(i);
+    const el = document.createElement('div');
+    el.className = 'm-card' + (rank===0?' r1':rank===1?' r2':rank===2?' r3':'');
+    el.dataset.id = i;
+    el.style.borderColor = c.color;
+    el.style.background = c.chipBg;
+    el.style.color = c.color;
+    el.style.left = pos.x + '%';
+    el.style.top = pos.y + '%';
+    el.innerHTML = (rank >= 0 ? medals[rank] + '<br>' : '') + c.short.replace(/\n/g,'<br>');
+    el.title = 'ダブルクリックで削除';
+    
+    let chipDragStartX, chipDragStartY, chipOrigLeft, chipOrigTop;
+    el.addEventListener('pointerdown', ev => {
+      ev.stopPropagation();
+      el.setPointerCapture(ev.pointerId);
+      chipDragStartX = ev.clientX;
+      chipDragStartY = ev.clientY;
+      chipOrigLeft = parseFloat(pos.x);
+      chipOrigTop  = parseFloat(pos.y);
+      const rect = plot.getBoundingClientRect();
+      function onMove(mv) {
+        const dx = (mv.clientX - chipDragStartX) / rect.width * 100;
+        const dy = (mv.clientY - chipDragStartY) / rect.height * 100;
+        const nx = Math.min(95, Math.max(5, chipOrigLeft + dx)).toFixed(1);
+        const ny = Math.min(95, Math.max(5, chipOrigTop  + dy)).toFixed(1);
+        el.style.left = nx + '%';
+        el.style.top  = ny + '%';
+        positions[i] = {x: nx, y: ny};
+      }
+      function onUp(upEv) {
+        el.releasePointerCapture(upEv.pointerId);
+        el.removeEventListener('pointermove', onMove);
+        el.removeEventListener('pointerup', onUp);
+        el.removeEventListener('pointercancel', onUp);
+        buildMatrixCards();
+        updateResult();
+      }
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerup', onUp);
+      el.addEventListener('pointercancel', onUp);
+    });
+    el.addEventListener('dblclick', () => {
+      delete positions[i];
+      buildMatrixCards();
+      updateResult();
+      render();
+    });
+    plot.appendChild(el);
+  });
+}
+
+function distToTopRight(pos) {
+  return Math.hypot(100 - parseFloat(pos.x), parseFloat(pos.y));
+}
+
+function getTop3() {
+  return Object.entries(positions)
+    .sort((a,b) => distToTopRight(a[1]) - distToTopRight(b[1]))
+    .slice(0,3).map(([id]) => +id);
+}
+
+function updateResult() {
+  const top3 = getTop3();
+  const list = document.getElementById('result-list');
+  const medals = ['🥇','🥈','🥉'];
+  if (!top3.length) {
+    list.innerHTML = '<div class="result-empty">カードを配置すると表示されます</div>';
+    return;
+  }
+  list.innerHTML = top3.map((id,i) => {
+    const c = CARDS[id];
+    return `<div class="result-item">
+      <span class="result-medal">${medals[i]}</span>
+      <span style="color:${c.color};font-weight:500;font-size:11px">${c.short.replace(/\n/g,' ')}</span>
+    </div>`;
+  }).join('');
+}
+
+function resetMatrix() {
+  Object.keys(positions).forEach(k => delete positions[k]);
+  buildMatrixCards();
+  updateResult();
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
