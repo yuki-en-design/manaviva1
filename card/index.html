@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沖縄 探究カード</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+  background: #f0f4f8;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 10px;
+  overflow: hidden;
+}
+.progress-bar {
+  width: 100%;
+  max-width: 400px;
+  height: 4px;
+  background: #d9e2ec;
+  border-radius: 2px;
+  margin-bottom: 10px;
+}
+.progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+.counter {
+  color: #627d98;
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  width: 100%;
+  max-width: 400px;
+  text-align: left;
+}
+.stage {
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  min-height: 580px;
+}
+.card {
+  position: absolute;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  cursor: grab;
+  transition: transform 0.08s ease, opacity 0.3s ease;
+  top: 0; left: 0;
+  background: #fffdfc;
+  user-select: none;
+}
+.card:active { cursor: grabbing; }
+.card.animating {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease;
+}
+.card.behind { transform: scale(0.92) translateY(15px); z-index: 5; opacity: 0.4; pointer-events: none; }
+.card.front { z-index: 20; }
+.card-header { padding: 18px 20px 14px; }
+.vision-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+.q-num { font-size: 10px; color: rgba(255,255,255,0.8); font-weight: 700; margin-bottom: 4px; }
+.q-text { font-size: 17px; font-weight: 800; color: #fff; line-height: 1.4; }
+.card-body { padding: 15px 18px; }
+.img-box {
+  width: 100%;
+  height: 130px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: #eee;
+}
+.img-box img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.section-label { font-size: 9px; font-weight: 800; color: #888; margin-bottom: 6px; letter-spacing: 0.1em; }
+.keywords { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 15px; }
+.kw {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.divider { border: none; border-top: 1px solid #eee; margin-bottom: 15px; }
+.think-box { border-radius: 10px; padding: 14px; font-size: 12.5px; line-height: 1.7; }
+.think-label { font-size: 10px; font-weight: 800; margin-bottom: 5px; }
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 25px;
+  width: 100%;
+  z-index: 100;
+  position: relative;
+}
+.nav-btn {
+  background: #fff;
+  border: 1px solid #d9e2ec;
+  color: #333;
+  border-radius: 50%;
+  width: 55px; height: 55px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  transition: all 0.2s;
+}
+.nav-btn:active { transform: scale(0.9); background: #f8f9fa; }
+.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+.img-box { position: relative; }
+.credit { position: absolute; right: 4px; bottom: 2px; font-size: 7px; color: rgba(255,255,255,0.8); text-shadow: 0 0 2px rgba(0,0,0,0.7); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+<div class="counter" id="counter"></div>
+<div class="stage" id="stage"></div>
+<div class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="go(-1)">←</button>
+  <button class="nav-btn" id="nextBtn" onclick="go(1)">→</button>
+</div>
+<script>
+const CARDS = [
+  {
+    vision: "将来像1 — 自然・歴史・伝統・文化を大切にする島", color: "#0D7A6E",
+    qnum: "Q1 — エネルギー",
+    q: "沖縄の島々で再生可能エネルギーがなかなか広がらないのはなぜか。広めるには、何から手をつければいいだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Yoshinoura_Thermal-power-plant.jpg?width=800",
+    keywords: ["再生可能エネルギー","太陽光発電","風力発電","エネルギー自給","電力コスト","化石燃料","送電網","離島"],
+    think: "沖縄の島々は本土の電力網とつながっていない。電気はどうやって作られていて、なぜ再生可能エネルギーへの切り替えが難しいんだろう？",
+    thinkBg: "#E8F5F0", thinkBorder: "#0D7A6E", thinkText: "#084D44", thinkLabel: "#0D7A6E", kwColor: "#0D7A6E", kwBorder: "#9FE1CB",
+  },
+  {
+    vision: "将来像1 — 自然・歴史・伝統・文化を大切にする島", color: "#0D7A6E",
+    qnum: "Q2 — 自然環境",
+    q: "沖縄の豊かな自然は、なぜ少しずつ失われているのか？次の世代に残すには、何から手をつければいいだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Kerama_Island_-_6081216280.jpg?width=800",
+    keywords: ["サンゴ礁","やんばる","生物多様性","自然保護","環境破壊","気候変動","エコツーリズム","ブルーエコノミー"],
+    think: "沖縄の海や森では、今どんな変化が起きているんだろう？何がその原因になっていて、どうすれば守れるんだろう？",
+    thinkBg: "#E8F5F0", thinkBorder: "#0D7A6E", thinkText: "#084D44", thinkLabel: "#0D7A6E", kwColor: "#0D7A6E", kwBorder: "#9FE1CB",
+  },
+  {
+    vision: "将来像1 — 自然・歴史・伝統・文化を大切にする島", color: "#0D7A6E",
+    qnum: "Q3 — 文化・歴史",
+    q: "首里城の再建に、若い世代はどう関わっていけばいいのか。次の世代に受け継ぐには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Shuri_Castle_under_reconstruction_on_23_December_2025.jpg?width=800",
+    keywords: ["首里城","復元","琉球王国","伝統技術","文化財","若者参加","クラウドファンディング","まちづくり"],
+    think: "2019年の火災で焼失した首里城。再建にはどんな人たちが関わっていて、どんな判断が求められているんだろう？",
+    thinkBg: "#E8F5F0", thinkBorder: "#0D7A6E", thinkText: "#084D44", thinkLabel: "#0D7A6E", kwColor: "#0D7A6E", kwBorder: "#9FE1CB",
+  },
+  {
+    vision: "将来像1 — 自然・歴史・伝統・文化を大切にする島", color: "#0D7A6E",
+    qnum: "Q4 — 伝統文化",
+    q: "沖縄の伝統文化が若い世代になかなか伝わらないのはなぜか。伝えていくには、どんな方法があるだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/An_eisa_folk_dancing_troupe_performs_at_the_2010_Okinawa_International_Carnival_Nov_101127-F-HZ730-008.jpg?width=800",
+    keywords: ["エイサー","三線","紅型","琉球舞踊","うちなーぐち","組踊","伝統工芸","無形文化遺産"],
+    think: "沖縄にはどんな文化があって、誰がどんなふうに受け継いでいるんだろう？何が伝わりにくくさせているんだろう？",
+    thinkBg: "#E8F5F0", thinkBorder: "#0D7A6E", thinkText: "#084D44", thinkLabel: "#0D7A6E", kwColor: "#0D7A6E", kwBorder: "#9FE1CB",
+  },
+  {
+    vision: "将来像2 — 心豊かで、安全・安心に暮らせる島", color: "#185FA5",
+    qnum: "Q5 — 子どもの貧困",
+    q: "沖縄の子どもの貧困率が高いままなのはなぜか。変えていくには、どこから手をつければいいだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/%E6%84%9B%E7%9F%A5%E7%9C%8C%E5%8D%8A%E7%94%B0%E5%B8%82_2018%E5%B9%B44%E6%9C%8818%E6%97%A5%E3%81%AE%E7%B5%A6%E9%A3%9F.jpeg?width=800",
+    keywords: ["子どもの貧困","貧困率","子ども食堂","奨学金","就学援助","ひとり親","格差","セーフティネット"],
+    think: "「子どもの貧困」とは具体的にどんな状態のことをいうんだろう？なぜ沖縄では全国と比べて高い水準が続いているんだろう？",
+    thinkBg: "#E6F1FB", thinkBorder: "#185FA5", thinkText: "#0A3A6B", thinkLabel: "#185FA5", kwColor: "#185FA5", kwBorder: "#B5D4F4",
+  },
+  {
+    vision: "将来像2 — 心豊かで、安全・安心に暮らせる島", color: "#185FA5",
+    qnum: "Q6 — 離島・医療",
+    q: "離島で安心して医療を受けられる環境がなかなか整わないのはなぜか。整えるには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Ishigaki_YKF_niinufabushi.jpg?width=800",
+    keywords: ["離島医療","救急搬送","ドクターヘリ","無医地区","遠隔診療","医師不足","インフラ","生活コスト"],
+    think: "離島で急に病気になったら、何が起きるんだろう？本島との違いはどこにあって、何がそれを生み出しているんだろう？",
+    thinkBg: "#E6F1FB", thinkBorder: "#185FA5", thinkText: "#0A3A6B", thinkLabel: "#185FA5", kwColor: "#185FA5", kwBorder: "#B5D4F4",
+  },
+  {
+    vision: "将来像2 — 心豊かで、安全・安心に暮らせる島", color: "#185FA5",
+    qnum: "Q7 — 基地・平和",
+    q: "沖縄に全国の米軍専用施設の約7割が集中しているのはなぜか。その背景を知り、自分の言葉で語れるようになるには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Marine_Corps_Air_Station_Futenma_20100526.jpg?width=800",
+    keywords: ["米軍基地","日米地位協定","沖縄戦後史","基地負担","騒音","軍用地料","普天間","辺野古"],
+    think: "なぜ沖縄にこれほど多くの基地が集中しているんだろう？歴史的な経緯と、今の暮らしへの影響を知ることから始めてみよう。",
+    thinkBg: "#E6F1FB", thinkBorder: "#185FA5", thinkText: "#0A3A6B", thinkLabel: "#185FA5", kwColor: "#185FA5", kwBorder: "#B5D4F4",
+  },
+  {
+    vision: "将来像3 — 希望と活力にあふれる豊かな島", color: "#C05A10",
+    qnum: "Q8 — 観光・経済",
+    q: "観光客が増えているのに、なぜ暮らしへの恩恵が実感しにくいのか。みんなにとってよい観光のあり方にするには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/202408_%E6%B2%96%E7%B9%A9%E7%B8%A3%E9%82%A3%E9%9C%B8%E5%B8%82%E7%9A%84%E9%82%A3%E9%9C%B8%E5%9C%8B%E9%9A%9B%E9%80%9A%E7%9A%84%E8%A1%97%E6%99%AF.jpg?width=800",
+    keywords: ["観光収入","オーバーツーリズム","観光公害","消費構造","宿泊業","土産品","持続可能な観光","外資"],
+    think: "観光客が増えることで、誰がどんな恩恵を受けていて、誰がどんな影響を受けているんだろう？お金の流れはどうなっている？",
+    thinkBg: "#FFF3E6", thinkBorder: "#E07B39", thinkText: "#5a3010", thinkLabel: "#C05A10", kwColor: "#C05A10", kwBorder: "#F5C98A",
+  },
+  {
+    vision: "将来像3 — 希望と活力にあふれる豊かな島", color: "#C05A10",
+    qnum: "Q9 — 産業・キャリア",
+    q: "沖縄で働く人の賃金が全国と比べて低いままなのはなぜか。変えていくには、何ができるだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Naha1.jpg?width=800",
+    keywords: ["平均賃金","非正規雇用","最低賃金","労働環境","正規雇用","産業構造","職業訓練","働き方"],
+    think: "沖縄の賃金はなぜ全国最低水準が続いているんだろう？どんな働き方が多くて、何が賃金を左右しているんだろう？",
+    thinkBg: "#FFF3E6", thinkBorder: "#E07B39", thinkText: "#5a3010", thinkLabel: "#C05A10", kwColor: "#C05A10", kwBorder: "#F5C98A",
+  },
+  {
+    vision: "将来像3 — 希望と活力にあふれる豊かな島", color: "#C05A10",
+    qnum: "Q10 — 起業・イノベーション",
+    q: "沖縄ならではのビジネスで長続きしているものとそうでないものは何が違うのか。成功させるには、何が必要だろう？",
+    image: "https://d1ldvf68ux039x.cloudfront.net/thumbs/photos/1707/3623192/1000w_q95.jpg",
+    keywords: ["販路","輸送コスト","ブランド化","後継者","資金調達","市場規模","差別化","島外展開"],
+    think: "沖縄ならではの農業・漁業・新しいビジネス……長続きしているものとそうでないものは、何が違うんだろう？",
+    thinkBg: "#FFF3E6", thinkBorder: "#E07B39", thinkText: "#5a3010", thinkLabel: "#C05A10", kwColor: "#C05A10", kwBorder: "#F5C98A",
+  },
+  {
+    vision: "将来像4 — 世界に開かれた交流と共生の島", color: "#7B2D5E",
+    qnum: "Q11 — 平和・歴史",
+    q: "沖縄戦の記憶が次の世代に伝わりにくくなっているのはなぜか。伝えていくには、どんな方法があるだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Okinawa_Cornerstone-of-Peace.jpg?width=800",
+    keywords: ["沖縄戦","慰霊の日","体験者","平和教育","デジタルアーカイブ","戦跡","ひめゆり","語り継ぎ"],
+    think: "体験者が少なくなっていく中で、沖縄戦の記憶はどうやって残されているんだろう？何が「伝わる」ことを難しくしているんだろう？",
+    thinkBg: "#FBEAF0", thinkBorder: "#993C6E", thinkText: "#4B1528", thinkLabel: "#7B2D5E", kwColor: "#7B2D5E", kwBorder: "#F4C0D1",
+  },
+  {
+    vision: "将来像4 — 世界に開かれた交流と共生の島", color: "#7B2D5E",
+    qnum: "Q12 — 多文化共生",
+    q: "沖縄にルーツの違う人たちが暮らしているのに、お互いをよく知らない状況があるのはなぜか。つながりをつくるには、何ができるだろう？",
+    image: "https://d1ldvf68ux039x.cloudfront.net/thumbs/photos/2602/9535648/1000w_q95.jpg",
+    imgPos: "center 30%",
+    keywords: ["ウチナーンチュ","外国人住民","アメラジアン","移住者","多文化","言語の壁","ネットワーク","国際交流"],
+    think: "沖縄にはどんなルーツを持つ人たちがいるんだろう？お互いをよく知らない状況が生まれているのはなぜだろう？",
+    thinkBg: "#FBEAF0", thinkBorder: "#993C6E", thinkText: "#4B1528", thinkLabel: "#7B2D5E", kwColor: "#7B2D5E", kwBorder: "#F4C0D1",
+  },
+  {
+    vision: "将来像5 — 多様な能力を発揮し、未来を拓く島", color: "#2D6A2D",
+    qnum: "Q13 — 教育・格差",
+    q: "沖縄の子どもたちの学力や進学率が全国と比べて差があるのはなぜか。縮めるには、何が必要だろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/JapaneseBackpack.jpg?width=800",
+    keywords: ["学力","進学率","全国学力調査","離島教育","塾格差","奨学金","GIGAスクール","教員不足"],
+    think: "沖縄の子どもたちの学びの環境は、全国と比べてどんな違いがあるんだろう？何がその差を生み出しているんだろう？",
+    thinkBg: "#EAF3DE", thinkBorder: "#3D7A3A", thinkText: "#173404", thinkLabel: "#2D6A2D", kwColor: "#2D6A2D", kwBorder: "#C0DD97",
+  },
+  {
+    vision: "将来像5 — 多様な能力を発揮し、未来を拓く島", color: "#2D6A2D",
+    qnum: "Q14 — 人口・地域",
+    q: "沖縄で育った若者が島を出ていきやすいのはなぜか。残りたいと思える場所にするには、何ができるだろう？",
+    image: "https://commons.wikimedia.org/wiki/Special:FilePath/Tokyo_Shibuya_Scramble_Crossing_2018-10-09.jpg?width=800",
+    keywords: ["人口流出","若者","県外進学","Uターン","賃金格差","定住促進","関係人口","地域おこし"],
+    think: "沖縄で育った若者は、その後どこへ行って何をしているんだろう？島を出る理由と、残る理由、それぞれ何があるんだろう？",
+    thinkBg: "#EAF3DE", thinkBorder: "#3D7A3A", thinkText: "#173404", thinkLabel: "#2D6A2D", kwColor: "#2D6A2D", kwBorder: "#C0DD97",
+  },
+];
+
+const CREDITS = [
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Yoshinoura_Thermal-power-plant.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Kerama_Island_-_6081216280.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Shuri_Castle_under_reconstruction_on_23_December_2025.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:An_eisa_folk_dancing_troupe_performs_at_the_2010_Okinawa_International_Carnival_Nov_101127-F-HZ730-008.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:%E6%84%9B%E7%9F%A5%E7%9C%8C%E5%8D%8A%E7%94%B0%E5%B8%82_2018%E5%B9%B44%E6%9C%8818%E6%97%A5%E3%81%AE%E7%B5%A6%E9%A3%9F.jpeg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Ishigaki_YKF_niinufabushi.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Marine_Corps_Air_Station_Futenma_20100526.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:202408_%E6%B2%96%E7%B9%A9%E7%B8%A3%E9%82%A3%E9%9C%B8%E5%B8%82%E7%9A%84%E9%82%A3%E9%9C%B8%E5%9C%8B%E9%9A%9B%E9%80%9A%E7%9A%84%E8%A1%97%E6%99%AF.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Naha1.jpg" },
+  { t: "写真：U.S. Marine Corps / Lance Cpl. Bernadette Wildes", u: "https://www.dvidshub.net/image/3623192/mango-mike-marine-veteran-plants-roots-okinawa" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Okinawa_Cornerstone-of-Peace.jpg" },
+  { t: "写真：U.S. Air Force / Staff Sgt. Gary Hilton", u: "https://www.dvidshub.net/image/9535648/drumbeats-and-friendship-kadena-chatan-students-unite-through-okinawan-culture" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:JapaneseBackpack.jpg" },
+  { t: "写真：Wikimedia Commons", u: "https://commons.wikimedia.org/wiki/File:Tokyo_Shibuya_Scramble_Crossing_2018-10-09.jpg" },
+];
+
+let current = 0;
+let startX = 0, isDragging = false, dragCard = null;
+let isAnimating = false;
+
+function render() {
+  current = Math.max(0, Math.min(current, CARDS.length - 1));
+  const stage = document.getElementById('stage');
+  stage.innerHTML = '';
+  if (current + 1 < CARDS.length) {
+    const behind = makeCard(current + 1);
+    behind.classList.add('behind');
+    stage.appendChild(behind);
+  }
+  const front = makeCard(current);
+  front.classList.add('front');
+  stage.appendChild(front);
+  setupDrag(front);
+  const prog = document.getElementById('prog');
+  prog.style.width = ((current + 1) / CARDS.length * 100) + '%';
+  prog.style.background = CARDS[current].color;
+  document.getElementById('counter').textContent = (current + 1) + ' / ' + CARDS.length;
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').disabled = current === CARDS.length - 1;
+}
+
+function makeCard(i) {
+  const c = CARDS[i];
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.innerHTML = `
+    <div class="card-header" style="background:${c.color}">
+      <div class="vision-badge">${c.vision}</div>
+      <div class="q-num">${c.qnum}</div>
+      <div class="q-text">${c.q}</div>
+    </div>
+    <div class="card-body">
+      <div class="img-box"><img src="${c.image}" alt="img" style="object-position:${c.imgPos || 'center'}" onerror="this.parentElement.style.background='#ccc';this.style.display='none'"><a class="credit" href="${CREDITS[i].u}" target="_blank" rel="noopener">${CREDITS[i].t}</a></div>
+      <div class="section-label">キーワード</div>
+      <div class="keywords">
+        ${c.keywords.map(k => `<span class="kw" style="color:${c.kwColor};border-color:${c.kwBorder}">${k}</span>`).join('')}
+      </div>
+      <div class="divider"></div>
+      <div class="think-box" style="background:${c.thinkBg};border:1px dashed ${c.thinkBorder}">
+        <div class="think-label" style="color:${c.thinkLabel}">💡 考えてみよう</div>
+        <span style="color:${c.thinkText}">${c.think}</span>
+      </div>
+    </div>
+  `;
+  return el;
+}
+
+function setupDrag(card) {
+  card.addEventListener('mousedown', e => {
+    if (isAnimating) return;
+    startX = e.clientX; isDragging = true; dragCard = card;
+  });
+  card.addEventListener('touchstart', e => {
+    if (isAnimating) return;
+    startX = e.touches[0].clientX; isDragging = true; dragCard = card;
+  }, { passive: true });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMoveT, { passive: true });
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchend', onEnd);
+}
+
+function onMove(e) {
+  if (!isDragging || !dragCard || isAnimating) return;
+  const dx = e.clientX - startX;
+  dragCard.style.transform = `translateX(${dx}px) rotate(${dx * 0.05}deg)`;
+}
+function onMoveT(e) {
+  if (!isDragging || !dragCard || isAnimating) return;
+  const dx = e.touches[0].clientX - startX;
+  dragCard.style.transform = `translateX(${dx}px) rotate(${dx * 0.05}deg)`;
+}
+
+function onEnd(e) {
+  if (!isDragging || !dragCard || isAnimating) return;
+  isDragging = false;
+  const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+  const dx = clientX - startX;
+  if (Math.abs(dx) > 100) {
+    const dir = dx > 0 ? 1 : -1;
+    if ((dir === 1 && current === 0) || (dir === -1 && current === CARDS.length - 1)) {
+      cancelDrag();
+    } else {
+      animateOut(dragCard, dir);
+    }
+  } else {
+    cancelDrag();
+  }
+  dragCard = null;
+}
+
+function cancelDrag() {
+  if (!dragCard) return;
+  dragCard.classList.add('animating');
+  dragCard.style.transform = '';
+  setTimeout(() => { if (dragCard) dragCard.classList.remove('animating'); }, 400);
+}
+
+function animateOut(el, dir) {
+  if (isAnimating) return;
+  isAnimating = true;
+  el.classList.add('animating');
+  el.style.transform = `translateX(${dir * 150}%) rotate(${dir * 20}deg)`;
+  el.style.opacity = '0';
+  setTimeout(() => {
+    current = (dir === -1) ? current + 1 : current - 1;
+    render();
+    isAnimating = false;
+  }, 400);
+}
+
+function go(dir) {
+  if (isAnimating) return;
+  if (dir === -1 && current === 0) return;
+  if (dir === 1 && current === CARDS.length - 1) return;
+  const front = document.querySelector('.front');
+  if (front) animateOut(front, dir === 1 ? -1 : 1);
+}
+
+render();
+</script>
+</body>
+</html>
