@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏆 振り返り大賞ルーレット</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFF8F0;
+    --red: #E84444;
+    --blue: #4477DD;
+    --yellow: #F5C842;
+    --green: #44BB77;
+    --dark: #2A2A2A;
+    --gold: #FFD700;
+    --card: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    color: var(--dark);
+    overflow-x: hidden;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    background: var(--red); /* 表彰っぽく赤色に */
+    color: white;
+    text-align: center;
+    padding: 20px 16px 16px;
+    box-shadow: 0 4px 0 #B32D2D;
+    position: relative;
+    z-index: 10;
+  }
+  header h1 { font-size: 1.6rem; font-weight: 900; letter-spacing: 0.05em; }
+  header p { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; font-weight: 700; }
+
+  /* ===== MAIN ===== */
+  main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 40px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ===== ROULETTE SECTION ===== */
+  .roulette-container {
+    width: 100%;
+    margin-bottom: 30px;
+  }
+
+  .roulette-box {
+    background: white;
+    border: 4px solid var(--dark);
+    border-radius: 16px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 6px 6px 0 var(--dark);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ルーレット内の影（立体感） */
+  .roulette-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 20px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
+    z-index: 2;
+    pointer-events: none;
+  }
+  .roulette-box::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* 縦に並ぶリスト */
+  .roulette-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  /* ルーレットの中身（1項目） */
+  .roulette-item {
+    height: 120px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--dark);
+    text-align: center;
+    line-height: 1.4;
+    word-break: keep-all;
+    padding: 0 20px;
+  }
+
+  /* ===== ROLL BTN ===== */
+  .roll-btn {
+    display: block;
+    background: var(--yellow);
+    color: var(--dark);
+    border: 3px solid var(--dark);
+    box-shadow: 4px 4px 0 var(--dark);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    padding: 16px 60px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    letter-spacing: 0.08em;
+    margin-bottom: 40px;
+  }
+  .roll-btn:hover { transform: translateY(-2px); box-shadow: 6px 6px 0 var(--dark); }
+  .roll-btn:active { transform: translateY(3px); box-shadow: 1px 1px 0 var(--dark); }
+  .roll-btn:disabled { background: #ccc; cursor: not-allowed; box-shadow: 2px 2px 0 var(--dark); transform: none; }
+
+  /* ===== RESULT CARD ===== */
+  .result-card {
+    background: white;
+    border: 3px solid var(--dark);
+    box-shadow: 6px 6px 0 var(--dark);
+    border-radius: 20px;
+    padding: 30px 20px;
+    text-align: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .result-card.hidden {
+    transform: scale(0.8);
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    visibility: hidden;
+  }
+
+  .result-label {
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: white;
+    background: var(--blue);
+    padding: 4px 20px;
+    border-radius: 999px;
+    letter-spacing: 0.1em;
+  }
+
+  .result-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    line-height: 1.4;
+    color: var(--red);
+  }
+
+  .result-recipient {
+    font-size: 1.2rem;
+    font-weight: 700;
+    background: #FFF0F0;
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: 2px dashed var(--red);
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .blank-name {
+    display: inline-block;
+    min-width: 80px;
+    border-bottom: 2px solid var(--dark);
+    padding: 0 10px;
+    color: #888;
+  }
+
+  /* スマホ対応の調整 */
+  @media (max-width: 480px) {
+    header h1 { font-size: 1.3rem; }
+    .roulette-box { height: 100px; }
+    .roulette-item { height: 100px; font-size: 1.2rem; }
+    .roll-btn { font-size: 1.2rem; padding: 14px 40px; }
+    .result-title { font-size: 1.4rem; }
+    .result-recipient { font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏆 振り返り大賞ルーレット</h1>
+  <p>ルーレットを回して、該当するメンバーをみんなで決めよう！</p>
+</header>
+
+<main>
+  <div class="roulette-container">
+    <div class="roulette-box" id="rouletteBox">
+      <div class="roulette-list" id="rouletteList">
+        <div class="roulette-item">ボタンを押してスタート！</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="roll-btn" id="rollBtn" onclick="startRoulette()">🎯 回す！</button>
+
+  <div class="result-card hidden" id="resultCard">
+    <div class="result-label">今回決めるのは…</div>
+    <div class="result-title" id="resultTitle">一番〇〇だった大賞</div>
+    <div class="result-recipient">
+      受賞者： <span class="blank-name">誰だろう？</span> さん
+    </div>
+  </div>
+</main>
+
+<script>
+// ===== 10個の大賞リスト =====
+const awards = [
+  "一番ツッコミが鋭かった大賞",
+  "一番調べてきてくれた大賞",
+  "一番場を和ませてくれた大賞",
+  "一番縁の下の力持ちだった大賞",
+  "一番成長スピードがヤバかった大賞",
+  "一番ポジティブな空気を作った大賞",
+  "一番神がかったアイデアを出した大賞",
+  "一番ピンチをチャンスに変えた大賞",
+  "一番レスポンスが光速だった大賞",
+  "一番美味しいところを持っていった大賞"
+];
+
+let isRolling = false;
+let currentAward = "ボタンを押してスタート！";
+
+function startRoulette() {
+  if (isRolling) return;
+  isRolling = true;
+
+  const btn = document.getElementById('rollBtn');
+  const rouletteBox = document.getElementById('rouletteBox');
+  const rouletteList = document.getElementById('rouletteList');
+  const resultCard = document.getElementById('resultCard');
+
+  // 初期化
+  btn.disabled = true;
+  btn.textContent = '回転中...';
+  
+  // 結果カードを隠す
+  resultCard.classList.add('hidden');
+  setTimeout(() => {
+    resultCard.style.position = 'absolute';
+  }, 300);
+
+  // アイテムの高さを取得（中途半端な位置で止まらないように、アイテム自体の高さを基準にする）
+  const itemHeight = rouletteList.firstElementChild.offsetHeight; 
+  const spinCount = 40; // 回すアイテムの数
+
+  // リストをリセット
+  rouletteList.style.transition = 'none';
+  rouletteList.innerHTML = '';
+
+  // 1. 次の「当たり」を決定し、一番上に追加
+  const finalAward = awards[Math.floor(Math.random() * awards.length)];
+  const finalItem = document.createElement('div');
+  finalItem.className = 'roulette-item';
+  finalItem.textContent = finalAward;
+  rouletteList.appendChild(finalItem);
+
+  // 2. ランダムな賞をたくさん追加（間の帯）
+  for (let i = 0; i < spinCount - 1; i++) {
+    const div = document.createElement('div');
+    div.className = 'roulette-item';
+    div.textContent = awards[Math.floor(Math.random() * awards.length)];
+    rouletteList.appendChild(div);
+  }
+
+  // 3. 現在のアイテムを一番下に追加（スタート位置）
+  const startItem = document.createElement('div');
+  startItem.className = 'roulette-item';
+  startItem.textContent = currentAward;
+  rouletteList.appendChild(startItem);
+
+  // スタート位置（一番下）に移動
+  const startY = -(spinCount * itemHeight); 
+  rouletteList.style.transform = `translateY(${startY}px)`;
+
+  // 強制的に描画を更新（初期位置をブラウザに認識させる）
+  rouletteList.offsetHeight;
+
+  currentAward = finalAward; // 次回の初期値にする
+
+  // アニメーション開始（ドゥルンと戻るイージングを適用）
+  rouletteList.style.transition = 'transform 4s cubic-bezier(0.15, 0.85, 0.25, 1.15)';
+  
+  // 最終位置（一番上）へ移動（上から下に降ってくる動きになる）
+  rouletteList.style.transform = `translateY(0px)`;
+
+  // アニメーション終了時間に合わせて結果を表示
+  setTimeout(() => {
+    finishRoulette(finalAward, btn, resultCard);
+  }, 4000);
+}
+
+function finishRoulette(finalAward, btn, resultCard) {
+  // 結果カードに反映
+  document.getElementById('resultTitle').textContent = finalAward;
+  
+  // 結果カードをアニメーション付きで表示
+  resultCard.style.position = 'static';
+  setTimeout(() => {
+    resultCard.classList.remove('hidden');
+  }, 50);
+
+  // ボタンを復活
+  btn.disabled = false;
+  btn.textContent = '🎯 もう一度回す！';
+  isRolling = false;
+}
+</script>
+</body>
+</html>
